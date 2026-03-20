@@ -5,28 +5,20 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Entity
-@Table(name = "comment")
+@Table(name = "tag")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Comment {
-
+public class Tag {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private int userID;
+
     @Column
-    private String content;
-    @Column
-    private String picturePath;
-    @Column
-    private LocalDateTime createTime;
+    private String description;
 
     @ManyToOne
     @JoinColumn(name = "post_id", referencedColumnName = "id")
     private Post post;
-
 }

@@ -29,6 +29,4 @@ public class Post {
     private String picturePath;
     @Column
     private String status;
-    @Column
-    private String tag;
 }
