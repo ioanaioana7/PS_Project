@@ -21,6 +21,8 @@ public class User {
     private String email;
     @Column
     private boolean role;
+    @Column
+    private String password;
 
 
 }
