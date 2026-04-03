@@ -1,7 +1,7 @@
 package com.utcn.demo.controller;
 
 
-import com.utcn.demo.entity.Comment;
+import  com.utcn.demo.entity.Comment;
 import com.utcn.demo.service.CommentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
