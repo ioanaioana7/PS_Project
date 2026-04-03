@@ -1,5 +1,6 @@
 package com.utcn.demo.service;
 
+import com.utcn.demo.entity.Comment;
 import com.utcn.demo.entity.Post;
 import com.utcn.demo.entity.Tag;
 import com.utcn.demo.repository.PostRepository;
@@ -16,6 +17,12 @@ public class TagService {
     @Autowired
     private TagRepository tagRepository;
 
+    public List<Tag> findAll() {
+        return (List<Tag>) tagRepository.findAll();
+    }
+    public Tag findById(int id) {
+        return tagRepository.findById(Long.valueOf(id)).orElse(null);
+    }
     public Tag save(Tag tag) {
         return tagRepository.save(tag);
     }
