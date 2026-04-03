@@ -23,4 +23,28 @@ public class UserController {
     public User addProduct(@RequestBody User user) {
         return userService.save(user);
     }
+
+    @GetMapping("/{id}")
+    public User getUserByID(@PathVariable int id){
+        return userService.findById(id);
+    }
+
+    @PutMapping("/update/{id}")
+    public User updateUser(@PathVariable int id, @RequestBody User user){
+        User existingUser = userService.findById(id);
+        if(existingUser != null){
+            existingUser.setName(user.getName());
+            existingUser.setEmail(user.getEmail());
+            return userService.save(existingUser);
+        }
+        return null;
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public void deleteUser(@PathVariable int id){
+        User user = userService.findById(id);
+        if(user != null){
+            userService.delete(user);
+        }
+    }
 }

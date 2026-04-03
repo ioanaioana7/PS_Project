@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "user")
+@Table(name = "users")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -21,4 +21,8 @@ public class User {
     private String email;
     @Column
     private boolean role;
+    @Column
+    private String password;
+
+
 }
