@@ -48,7 +48,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
-
+	<!-- SECURITY -->
+	<dependency>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-security</artifactId>
+	</dependency>
 <!--		&lt;!&ndash; LOMBOK (fix pentru JDK 21) &ndash;&gt;-->
 <!--		<dependency>-->
 <!--			<groupId>org.projectlombok</groupId>-->
