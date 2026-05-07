@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import './User.css';
 import { fetchUserById } from '../api';
+import './User.css';
 
 function User() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -16,35 +15,28 @@ function User() {
       return;
     }
 
-    let parsed;
     try {
-      parsed = JSON.parse(storedUser);
-    } catch {
+      const parsedUser = JSON.parse(storedUser);
+      if (parsedUser && parsedUser.id) {
+        // Fetch fresh data from API to ensure it's up to date
+        fetchUserById(parsedUser.id)
+          .then((data) => {
+            setUser(data);
+            setLoading(false);
+          })
+          .catch((err) => {
+            console.error('Failed to fetch user:', err);
+            // Fallback to stored user if API fails
+            setUser(parsedUser);
+            setLoading(false);
+          });
+      } else {
+        navigate('/login');
+      }
+    } catch (err) {
+      console.error('Error parsing stored user:', err);
       localStorage.removeItem('user');
       navigate('/login');
-      return;
-    }
-
-    if (!parsed || typeof parsed !== 'object') {
-      localStorage.removeItem('user');
-      navigate('/login');
-      return;
-    }
-
-    setUser(parsed);
-
-    if (parsed.id) {
-      fetchUserById(parsed.id)
-        .then((freshUser) => {
-          setUser(freshUser);
-          setLoading(false);
-        })
-        .catch((err) => {
-          setError(err.message || 'Could not load profile.');
-          setLoading(false);
-        });
-    } else {
-      setLoading(false);
     }
   }, [navigate]);
 
@@ -54,15 +46,20 @@ function User() {
   };
 
   if (loading) {
-    return <div className="user-container">Loading profile...</div>;
-  }
-
-  if (error) {
-    return <div className="user-container">{error}</div>;
+    return (
+      <div className="user-container">
+        <div className="status-message">Loading profile...</div>
+      </div>
+    );
   }
 
   if (!user) {
-    return null;
+    return (
+      <div className="user-container">
+        <div className="status-message error">User not found</div>
+        <button type="button" className="logout-button" onClick={() => navigate('/login')}>Back to Login</button>
+      </div>
+    );
   }
 
   return (
@@ -79,22 +76,18 @@ function User() {
             <strong>{user.email}</strong>
           </div>
           <div className="detail-row">
-            <span>User ID</span>
-            <strong>{user.id || 'Unknown'}</strong>
-          </div>
-          <div className="detail-row">
             <span>Role</span>
             <strong>{user.role ? 'Admin' : 'User'}</strong>
+          </div>
+          <div className="detail-row">
+            <span>User ID</span>
+            <strong>{user.id}</strong>
           </div>
         </div>
         <div className="user-actions">
           <Link to="/home" className="user-link">Back to Home</Link>
           <button type="button" onClick={handleLogout} className="logout-button">Logout</button>
         </div>
-      </div>
-      <div className="user-json">
-        <h2>Profile JSON</h2>
-        <pre>{JSON.stringify(user, null, 2)}</pre>
       </div>
     </div>
   );

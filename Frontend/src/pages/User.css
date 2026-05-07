@@ -73,3 +73,18 @@
   color: white;
   cursor: pointer;
 }
+
+.status-message {
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  color: #4c6ef5;
+  font-weight: 500;
+}
+
+.status-message.error {
+  color: #fa5252;
+  border: 1px solid #ffe3e3;
+  background: #fff5f5;
+}
