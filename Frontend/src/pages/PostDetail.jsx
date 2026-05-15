@@ -72,6 +72,8 @@ function PostDetail() {
       setNewComment('');
       setError('');
     } catch (err) {
+      // Catch err to help with debugging
+      console.error('Comment submission failed:', err);
       setError('Failed to post comment');
     }
   };
