@@ -1,6 +1,4 @@
-# This workflow automates the testing and building of the entire project
-# It covers the Frontend (React/Vite) and the two Backend services (Posts and Users)
-name: Workflow
+name: Unit Tests
 
 on:
   push:
@@ -9,8 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  frontend-build:
-    name: Frontend Build
+  frontend-tests:
+    name: Frontend Unit Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -26,12 +24,11 @@ jobs:
           cache-dependency-path: Frontend/package-lock.json
       - name: Install dependencies
         run: npm install
-      - name: Build Frontend
-        run: npm run build
-        continue-on-error: true
+      - name: Run Unit Tests
+        run: npm test
 
-  posts-backend-tests:
-    name: Posts Service Tests
+  posts-tests:
+    name: Posts Unit Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -47,10 +44,9 @@ jobs:
           cache: "maven"
       - name: Run Maven tests
         run: mvn clean test
-        continue-on-error: true
 
-  users-backend-tests:
-    name: Users Service Tests
+  users-tests:
+    name: Users Unit Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -66,4 +62,3 @@ jobs:
           cache: "maven"
       - name: Run Maven tests
         run: mvn clean test
-        continue-on-error: true

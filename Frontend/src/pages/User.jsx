@@ -3,13 +3,24 @@ import { Link, useNavigate } from 'react-router-dom';
 import { fetchUserById } from '../api';
 import './User.css';
 
+/**
+ * User Profile Component
+ * Displays the logged-in user's details and manages the session.
+ */
 function User() {
   const navigate = useNavigate();
+  // State for the user object
   const [user, setUser] = useState(null);
+  // Loading state while fetching data
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Loads user data on mount.
+   * Checks localStorage for an existing session and fetches fresh data from the API.
+   */
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
+    // If no user is found in localStorage, redirect to login
     if (!storedUser) {
       navigate('/login');
       return;
@@ -18,7 +29,7 @@ function User() {
     try {
       const parsedUser = JSON.parse(storedUser);
       if (parsedUser && parsedUser.id) {
-        // Fetch fresh data from API to ensure it's up to date
+        // Fetch fresh data from the Users microservice to ensure accuracy (e.g., if role changed)
         fetchUserById(parsedUser.id)
           .then((data) => {
             setUser(data);
@@ -26,7 +37,7 @@ function User() {
           })
           .catch((err) => {
             console.error('Failed to fetch user:', err);
-            // Fallback to stored user if API fails
+            // Fallback to stored user info if API is unreachable
             setUser(parsedUser);
             setLoading(false);
           });
@@ -40,6 +51,9 @@ function User() {
     }
   }, [navigate]);
 
+  /**
+   * Logs out the user by clearing the local session
+   */
   const handleLogout = () => {
     localStorage.removeItem('user');
     navigate('/login');
@@ -53,6 +67,7 @@ function User() {
     );
   }
 
+  // Handle case where user fetch failed and no local data was available
   if (!user) {
     return (
       <div className="user-container">
