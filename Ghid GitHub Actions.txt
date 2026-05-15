@@ -1,0 +1,520 @@
+﻿Ghid GitHub Actions pentru rularea testelor la fiecare push
+1. Ce este GitHub Actions?
+GitHub Actions este mecanismul prin care poți automatiza comenzi atunci când se întâmplă ceva în repository: push, pull_request, release, deploy etc. Un workflow conține unul sau mai multe jobs, iar fiecare job conține mai mulți steps. GitHub explică workflow-urile ca fișiere YAML care rulează automat pe baza unor evenimente definite în repository. (GitHub Docs)
+Exemplu simplu de trigger:
+on:
+  push:
+  pull_request:
+Asta înseamnă că workflow-ul rulează la fiecare push și la fiecare pull_request.
+2. Unde se creează fișierul YAML?
+În root-ul proiectului, creezi structura:
+.github/
+  workflows/
+    tests.yml
+Exemplu:
+my-project/
+  .github/
+    workflows/
+      tests.yml
+  src/
+  package.json
+  pom.xml
+Fișierele de workflow GitHub Actions trebuie puse în .github/workflows/. (GitHub Docs)
+3. Structura generală a unui workflow
+Un fișier YAML are de obicei această formă:
+name: Run Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run command
+        run: echo "Hello from GitHub Actions"
+Explicație:
+name: Run Tests
+Numele workflow-ului care apare în tabul Actions din GitHub.
+on:
+  push:
+  pull_request:
+Când rulează workflow-ul.
+jobs:
+Lista de joburi.
+runs-on: ubuntu-latest
+Mașina virtuală pe care rulează jobul.
+steps:
+Pașii executați în ordine.
+uses: actions/checkout@v4
+Descarcă repository-ul pe runner, ca workflow-ul să aibă acces la cod.
+run: ...
+Rulează o comandă în terminal.
+4. Angular + Cypress
+4.1. Ce trebuie să existe în proiect
+În package.json, ar trebui să ai scripturi pentru:
+{
+  "scripts": {
+    "start": "ng serve --host 0.0.0.0 --port 4200 --allowed-hosts true",
+    "build": "ng build",
+    "cy:run": "cypress run"
+  }
+}
+Pentru aplicații Angular cu SSR, --allowed-hosts true poate fi necesar în CI, pentru că altfel serverul poate bloca requesturile către localhost, exact cum ai văzut în logul tău.
+Cypress recomandă folosirea action-ului oficial cypress-io/github-action, care poate instala dependințele, porni aplicația și rula testele. (docs.cypress.io)
+4.2. Workflow Angular + Cypress
+Creează fișierul:
+.github/workflows/angular-cypress.yml
+Conținut:
+name: Angular Cypress Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  cypress-tests:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Run Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          start: npm start
+          wait-on: "http://localhost:4200"
+          command: npm run cy:run
+          browser: chrome
+Ce face:
+uses: actions/setup-node@v4
+Instalează Node.js.
+cache: npm
+Cache-uiește dependințele npm pentru rulări mai rapide.
+uses: cypress-io/github-action@v6
+Rulează Cypress folosind action-ul oficial.
+start: npm start
+Pornește aplicația Angular.
+wait-on: "http://localhost:4200"
+Așteaptă până când aplicația este disponibilă pe portul 4200. Cypress documentează acest tip de flow pentru CI, unde serverul trebuie pornit înainte de rularea testelor. (learn.cypress.io)
+command: npm run cy:run
+Rulează testele Cypress.
+5. Java unit tests cu Maven
+5.1. Ce trebuie să existe în proiect
+Pentru Maven, proiectul trebuie să aibă:
+pom.xml
+Structură tipică:
+java-project/
+  src/
+    main/
+      java/
+    test/
+      java/
+  pom.xml
+Comanda uzuală pentru build + unit tests este:
+mvn test
+sau:
+mvn clean test
+GitHub are documentație oficială pentru build și test Java cu Maven în GitHub Actions. (GitHub Docs)
+5.2. Workflow Java + Maven
+Creează fișierul:
+.github/workflows/java-tests.yml
+Conținut:
+name: Java Unit Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  java-tests:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Run Maven tests
+        run: mvn clean test
+Ce face:
+uses: actions/setup-java@v4
+Instalează Java pe runner. Action-ul oficial setup-java poate instala versiunea cerută de Java și poate configura cache pentru Maven sau Gradle. (GitHub)
+distribution: temurin
+Folosește distribuția Eclipse Temurin.
+java-version: 21
+Setează Java 21.
+cache: maven
+Cache pentru dependințele Maven.
+run: mvn clean test
+Rulează testele unitare.
+6. Java unit tests cu Gradle
+Dacă proiectul are Gradle, de obicei ai:
+build.gradle
+sau:
+build.gradle.kts
+și eventual:
+gradlew
+Workflow:
+name: Java Gradle Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  gradle-tests:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Run Gradle tests
+        run: ./gradlew test
+Dacă nu ai gradlew, poți folosi:
+- name: Run Gradle tests
+  run: gradle test
+Dar recomandat este să folosești wrapper-ul ./gradlew.
+7. Workflow combinat: Angular + Cypress și Java tests
+Dacă ai un repository care conține și frontend Angular, și backend Java, poți avea un singur workflow cu două joburi.
+Exemplu structură:
+project/
+  frontend/
+    package.json
+  backend/
+    pom.xml
+  .github/
+    workflows/
+      ci.yml
+Workflow:
+name: CI Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  angular-cypress:
+    name: Angular Cypress Tests
+    runs-on: ubuntu-24.04
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Run Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: frontend
+          start: npm start
+          wait-on: "http://localhost:4200"
+          command: npm run cy:run
+          browser: chrome
+
+  java-tests:
+    name: Java Unit Tests
+    runs-on: ubuntu-24.04
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Run Maven tests
+        run: mvn clean test
+Asta rulează două joburi separate:
+angular-cypress
+java-tests
+Dacă unul pică, celălalt poate rula independent.
+8. Variantă pentru notare: workflow funcțional chiar dacă testele pică
+Pentru curs/notare, este important să se vadă că:
+1. workflow-ul există;
+2. pornește la push;
+3. instalează dependințele;
+4. încearcă să ruleze testele;
+5. apare în tabul Actions;
+6. chiar dacă testele crapă, acțiunea este configurată corect.
+Poți menționa în README sau în descrierea temei:
+Pentru această temă, aplicațiile nu sunt deployed. Evaluarea se face pe baza existenței și funcționării workflow-urilor GitHub Actions. Este acceptabil ca anumite teste să eșueze, atât timp cât workflow-ul pornește corect, instalează dependințele și încearcă să ruleze testele configurate.
+Dacă vrei ca workflow-ul să continue chiar dacă testele pică, poți folosi:
+continue-on-error: true
+GitHub Actions suportă continue-on-error la nivel de step sau job, pentru cazurile în care vrei ca workflow-ul să continue chiar dacă un pas eșuează. (GitHub Docs)
+8.1. Angular + Cypress cu continue-on-error
+name: Angular Cypress Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  cypress-tests:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Run Cypress tests
+        continue-on-error: true
+        uses: cypress-io/github-action@v6
+        with:
+          start: npm start
+          wait-on: "http://localhost:4200"
+          command: npm run cy:run
+          browser: chrome
+Asta înseamnă:
+Dacă Cypress pică, workflow-ul nu se oprește complet.
+Totuși, pentru proiecte reale, de producție, nu se recomandă să ascunzi testele picate. Pentru notare/demo, poate fi acceptabil.
+8.2. Java Maven cu continue-on-error
+name: Java Unit Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  java-tests:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Run Maven tests
+        continue-on-error: true
+        run: mvn clean test
+9. Variantă recomandată pentru teme / proiecte de curs
+Pentru o temă unde contează să existe pipeline-ul, aș folosi un workflow general de forma:
+name: CI Pipeline
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  angular-cypress:
+    name: Angular Cypress Tests
+    runs-on: ubuntu-24.04
+    if: hashFiles('package.json') != ''
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Run Cypress tests
+        continue-on-error: true
+        uses: cypress-io/github-action@v6
+        with:
+          start: npm start
+          wait-on: "http://localhost:4200"
+          command: npm run cy:run
+          browser: chrome
+
+  java-maven-tests:
+    name: Java Maven Unit Tests
+    runs-on: ubuntu-24.04
+    if: hashFiles('pom.xml') != ''
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Run Maven tests
+        continue-on-error: true
+        run: mvn clean test
+Atenție: această variantă presupune că package.json sau pom.xml sunt în root-ul repository-ului.
+10. Dacă proiectele sunt în subfoldere
+Exemplu:
+repo/
+  ang-app/
+    package.json
+  java-app/
+    pom.xml
+Atunci folosești working-directory.
+name: CI Pipeline
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  angular-cypress:
+    name: Angular Cypress Tests
+    runs-on: ubuntu-24.04
+
+    defaults:
+      run:
+        working-directory: ang-app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ang-app/package-lock.json
+
+      - name: Run Cypress tests
+        continue-on-error: true
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: ang-app
+          start: npm start
+          wait-on: "http://localhost:4200"
+          command: npm run cy:run
+          browser: chrome
+
+  java-maven-tests:
+    name: Java Maven Unit Tests
+    runs-on: ubuntu-24.04
+
+    defaults:
+      run:
+        working-directory: java-app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          cache-dependency-path: java-app/pom.xml
+
+      - name: Run Maven tests
+        continue-on-error: true
+        run: mvn clean test
+11. Checklist final
+Înainte de push, verifică:
+[ ] Există folderul .github/workflows/
+[ ] Există fișierul .yml, de exemplu ci.yml
+[ ] Workflow-ul are on: push
+[ ] Există actions/checkout@v4
+[ ] Pentru Angular există setup-node
+[ ] Pentru Java există setup-java
+[ ] Comenzile rulează local: npm run cy:run / mvn test / ./gradlew test
+[ ] package-lock.json este comis pentru proiectele npm
+[ ] pom.xml sau build.gradle există pentru Java
+[ ] În GitHub, tabul Actions este activ
+
+Minim necesar pentru Angular 21 + Cypress:
+name: Angular Cypress Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  cypress-tests:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Run Cypress tests
+        continue-on-error: true
+        uses: cypress-io/github-action@v6
+        with:
+          start: npm start
+          wait-on: "http://localhost:4200"
+          command: npm run cy:run
+          browser: chrome
+Iar în package.json:
+"scripts": {
+  "ng": "ng",
+  "start": "ng serve --host 0.0.0.0 --port 4200 --allowed-hosts true",
+  "build": "ng build",
+  "watch": "ng build --watch --configuration development",
+  "test": "ng test",
+  "cy:run": "cypress run"
+}
+

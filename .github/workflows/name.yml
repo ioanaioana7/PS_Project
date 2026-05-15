@@ -1,0 +1,64 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  frontend-tests:
+    name: Frontend Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: Frontend/package-lock.json
+      - name: Install dependencies
+        run: npm install
+      - name: Run Unit Tests
+        run: npm test
+
+  posts-tests:
+    name: Posts Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Posts
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          cache: "maven"
+      - name: Run Maven tests
+        run: mvn clean test
+
+  users-tests:
+    name: Users Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Users
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          cache: "maven"
+      - name: Run Maven tests
+        run: mvn clean test

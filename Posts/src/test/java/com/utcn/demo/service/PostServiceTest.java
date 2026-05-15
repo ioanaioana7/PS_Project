@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,33 +30,33 @@ class PostServiceTest {
     @Test
     void findAll_ReturnsPostList() {
         List<Post> posts = new ArrayList<>();
-        posts.add(new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published"));
-        posts.add(new Post(2L, 101L, "Java Best Practices", "Important Java best practices", LocalDateTime.now(), null, "published"));
+        posts.add(new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published", new HashSet<>()));
+        posts.add(new Post(2L, 101L, "Java Best Practices", "Important Java best practices", LocalDateTime.now(), null, "published", new HashSet<>()));
 
-        when(postRepository.findAll()).thenReturn(posts);
+        when(postRepository.findAllByOrderByPostDateDesc()).thenReturn(posts);
 
         List<Post> result = postService.findAll();
 
         assertNotNull(result);
         assertEquals(2, result.size());
         assertEquals("Spring Boot Tips", result.get(0).getTitle());
-        verify(postRepository, times(1)).findAll();
+        verify(postRepository, times(1)).findAllByOrderByPostDateDesc();
     }
 
     @Test
     void findAll_Empty_ReturnsEmptyList() {
-        when(postRepository.findAll()).thenReturn(new ArrayList<>());
+        when(postRepository.findAllByOrderByPostDateDesc()).thenReturn(new ArrayList<>());
 
         List<Post> result = postService.findAll();
 
         assertNotNull(result);
         assertEquals(0, result.size());
-        verify(postRepository, times(1)).findAll();
+        verify(postRepository, times(1)).findAllByOrderByPostDateDesc();
     }
 
     @Test
     void findById_ExistingId_ReturnsPost() {
-        Post post = new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published");
+        Post post = new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published", new HashSet<>());
         when(postRepository.findById(1L)).thenReturn(Optional.of(post));
 
         Post result = postService.findById(1);
@@ -78,7 +79,7 @@ class PostServiceTest {
 
     @Test
     void save_CallsRepositoryAndReturnsSaved() {
-        Post post = new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published");
+        Post post = new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published", new HashSet<>());
         when(postRepository.save(post)).thenReturn(post);
 
         Post result = postService.save(post);
@@ -91,8 +92,8 @@ class PostServiceTest {
 
     @Test
     void save_NewPost_ReturnsSavedWithId() {
-        Post newPost = new Post(null, 102L, "New Post", "New content", LocalDateTime.now(), null, "draft");
-        Post saved = new Post(50L, 102L, "New Post", "New content", LocalDateTime.now(), null, "draft");
+        Post newPost = new Post(null, 102L, "New Post", "New content", LocalDateTime.now(), null, "draft", new HashSet<>());
+        Post saved = new Post(50L, 102L, "New Post", "New content", LocalDateTime.now(), null, "draft", new HashSet<>());
 
         when(postRepository.save(newPost)).thenReturn(saved);
 
@@ -106,7 +107,7 @@ class PostServiceTest {
 
     @Test
     void delete_CallsRepositoryDelete() {
-        Post post = new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published");
+        Post post = new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published", new HashSet<>());
         doNothing().when(postRepository).delete(post);
 
         postService.delete(post);

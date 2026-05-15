@@ -3,24 +3,39 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Auth.css';
 import { createUser } from '../api';
 
+/**
+ * Register Component
+ * Allows new users to create an account by interacting with the Users microservice.
+ */
 function Register() {
   const navigate = useNavigate();
+  
+  // State for registration details
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: ''
   });
+  
+  // Error message state
   const [error, setError] = useState('');
 
+  /**
+   * Syncs input changes with the component state
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  /**
+   * Validates and submits user data to the backend
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
+    // Field validation
     if (!formData.name || !formData.email || !formData.password) {
       setError('Please fill in all fields');
       return;
@@ -31,12 +46,16 @@ function Register() {
     }
 
     try {
+      // Create user on the server (role defaults to false/User)
       const createdUser = await createUser({
         ...formData,
         role: false,
       });
 
+      // Automatically log the user in by storing their data
       localStorage.setItem('user', JSON.stringify(createdUser));
+      
+      // Navigate to the user's profile
       navigate('/user');
     } catch (err) {
       setError(err.message || 'Registration failed.');
