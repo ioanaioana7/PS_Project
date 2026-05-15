@@ -30,9 +30,8 @@ class TagServiceTest {
     @Test
     void findAll_ReturnsTagList() {
         List<Tag> tags = new ArrayList<>();
-        Post post = new Post(1L, 100L, "Test Post", "Test Content", LocalDateTime.now(), null, null);
-        tags.add(new Tag(1L, "java", post));
-        tags.add(new Tag(2L, "spring", post));
+        tags.add(new Tag(1L, "java"));
+        tags.add(new Tag(2L, "spring"));
 
         when(tagRepository.findAll()).thenReturn(tags);
 
@@ -57,8 +56,7 @@ class TagServiceTest {
 
     @Test
     void findById_ExistingId_ReturnsTag() {
-        Post post = new Post(1L, 100L, "Test Post", "Test Content", LocalDateTime.now(), null, null);
-        Tag tag = new Tag(1L, "java", post);
+        Tag tag = new Tag(1L, "java");
         when(tagRepository.findById(1L)).thenReturn(Optional.of(tag));
 
         Tag result = tagService.findById(1);
@@ -81,8 +79,7 @@ class TagServiceTest {
 
     @Test
     void save_CallsRepositoryAndReturnsSaved() {
-        Post post = new Post(1L, 100L, "Test Post", "Test Content", LocalDateTime.now(), null, null);
-        Tag tag = new Tag(1L, "java", post);
+        Tag tag = new Tag(1L, "java");
         when(tagRepository.save(tag)).thenReturn(tag);
 
         Tag result = tagService.save(tag);
@@ -95,9 +92,8 @@ class TagServiceTest {
 
     @Test
     void save_NewTag_ReturnsSavedWithId() {
-        Post post = new Post(1L, 100L, "Test Post", "Test Content", LocalDateTime.now(), null, null);
-        Tag newTag = new Tag(null, "python", post);
-        Tag saved = new Tag(3L, "python", post);
+        Tag newTag = new Tag(null, "python");
+        Tag saved = new Tag(3L, "python");
 
         when(tagRepository.save(newTag)).thenReturn(saved);
 

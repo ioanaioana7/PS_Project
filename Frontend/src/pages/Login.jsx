@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Auth.css';
-import { fetchUsers } from '../api';
+import { loginUser } from '../api';
 
 function Login() {
   const navigate = useNavigate();
@@ -26,17 +26,11 @@ function Login() {
     }
 
     try {
-      const users = await fetchUsers();
-      const user = users.find((item) => item.email === formData.email);
-      if (!user || user.password !== formData.password) {
-        setError('Invalid email or password');
-        return;
-      }
-
+      const user = await loginUser(formData);
       localStorage.setItem('user', JSON.stringify(user));
       navigate('/user');
     } catch (err) {
-      setError(err.message || 'Login failed.');
+      setError(err.message || 'Invalid email or password');
     }
   };
 

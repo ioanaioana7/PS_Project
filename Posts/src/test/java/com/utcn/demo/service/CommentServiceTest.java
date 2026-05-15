@@ -30,8 +30,8 @@ class CommentServiceTest {
     @Test
     void findAll_ReturnsCommentList() {
         List<Comment> comments = new ArrayList<>();
-        comments.add(new Comment(1L, 1, "Great post!", null, LocalDateTime.now(), new Post(1L, 100L, "Test Post", "Test Content", LocalDateTime.now(), null, null)));
-        comments.add(new Comment(2L, 2, "Thanks for sharing", null, LocalDateTime.now(), new Post(1L, 100L, "Test Post", "Test Content", LocalDateTime.now(), null, null)));
+        comments.add(new Comment(1L, 1, "Great post!", null, LocalDateTime.now(), new Post(1L, 100L, "Test Post", "Test Content", LocalDateTime.now(), null, null, null)));
+        comments.add(new Comment(2L, 2, "Thanks for sharing", null, LocalDateTime.now(), new Post(1L, 100L, "Test Post", "Test Content", LocalDateTime.now(), null, null, null)));
 
         when(commentRepository.findAll()).thenReturn(comments);
 
@@ -56,7 +56,7 @@ class CommentServiceTest {
 
     @Test
     void findById_ExistingId_ReturnsComment() {
-        Post post = new Post(1L, 100L, "Test Post", "Test Content", LocalDateTime.now(), null, null);
+        Post post = new Post(1L, 100L, "Test Post", "Test Content", LocalDateTime.now(), null, null, null);
         Comment comment = new Comment(1L, 1, "Great post!", null, LocalDateTime.now(), post);
         when(commentRepository.findById(1L)).thenReturn(Optional.of(comment));
 
@@ -80,7 +80,7 @@ class CommentServiceTest {
 
     @Test
     void save_WithValidPost_ReturnsCommentAndCallsRepository() {
-        Post post = new Post(1L, 100L, "Test Post", "Test Content", LocalDateTime.now(), null, null);
+        Post post = new Post(1L, 100L, "Test Post", "Test Content", LocalDateTime.now(), null, null, null);
         Comment comment = new Comment(1L, 1, "Great post!", null, LocalDateTime.now(), post);
         when(commentRepository.save(comment)).thenReturn(comment);
 
@@ -105,7 +105,7 @@ class CommentServiceTest {
 
     @Test
     void delete_CallsRepositoryDelete() {
-        Post post = new Post(1L, 100L, "Test Post", "Test Content", LocalDateTime.now(), null, null);
+        Post post = new Post(1L, 100L, "Test Post", "Test Content", LocalDateTime.now(), null, null, null);
         Comment comment = new Comment(1L, 1, "Great post!", null, LocalDateTime.now(), post);
         doNothing().when(commentRepository).delete(comment);
 

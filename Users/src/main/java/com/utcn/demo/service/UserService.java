@@ -32,6 +32,17 @@ public class UserService {
         return null;
     }
 
+    public User login(String email, String password) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            if (passwordEncoder.matches(password, user.getPassword())) {
+                return user;
+            }
+        }
+        return null;
+    }
+
     public User save(User user) {
         // Encrypt password
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {

@@ -70,6 +70,10 @@ public class PostService {
         return postRepository.save(post);
     }
 
+    public Post save(Post post) {
+        return createPost(post);
+    }
+
     public Post updatePost(Post post, int id) {
         Post existingPost = postRepository.findById(Long.valueOf(id)).orElse(null);
         if (existingPost != null) {

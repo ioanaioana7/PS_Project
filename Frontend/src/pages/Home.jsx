@@ -44,8 +44,10 @@ function Home() {
           <div className="posts-grid">
             {posts.map((post) => (
               <article key={post.id} className="post-card">
-                <h2>{post.title || 'Untitled post'}</h2>
-                <p>{post.content || 'No content provided.'}</p>
+                <Link to={`/post/${post.id}`} className="post-link">
+                  <h2>{post.title || 'Untitled post'}</h2>
+                </Link>
+                <p>{post.content ? (post.content.substring(0, 100) + '...') : 'No content provided.'}</p>
                 <div className="post-meta">
                   <span>Post ID: {post.id}</span>
                   <span>User ID: {post.userID}</span>
