@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -67,6 +68,11 @@ public class PostService {
             managedTags.add(existingTag);
         }
         post.setTags(managedTags);
+
+        //F3 cu status
+        post.setStatus("Just Posted");
+        post.setPostDate(LocalDateTime.now());
+
         return postRepository.save(post);
     }
 
@@ -95,6 +101,15 @@ public class PostService {
         return null;
     }
 
+    // pt outdated
+    public Post closePost(Long id){
+        Post post = postRepository.findById(id).orElse(null);
+        if(post != null){
+            post.setStatus("Outdated");
+            return postRepository.save(post);
+        }
+        return null;
+    }
     public void delete(Post post) {
         postRepository.delete(post);
     }
