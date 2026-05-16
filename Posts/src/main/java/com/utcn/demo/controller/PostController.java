@@ -49,4 +49,10 @@ public class PostController {
             postService.delete(post);
         }
     }
+
+    //F3
+    @PutMapping("/close/{id}")
+    public Post closePost(@PathVariable Long id){
+        return postService.closePost(id);
+    }
 }
