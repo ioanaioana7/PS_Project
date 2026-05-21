@@ -30,12 +30,12 @@ public class PostService {
     @Autowired private PostRepository postRepository;
     @Autowired private TagRepository tagRepository;
 
-    private final String uploadDir = "uploads"; // Directory to save images
+    private final String uploadDir = "uploads"; 
 
     public PostService() {
-        // Ensure upload directory exists
         try {
-            Path uploadPath = Paths.get(uploadDir);
+            // Use absolute path to ensure we can create it
+            Path uploadPath = Paths.get(System.getProperty("user.dir"), uploadDir);
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
@@ -45,12 +45,21 @@ public class PostService {
     }
 
     public String saveImage(MultipartFile file) throws Exception {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File is empty");
+        }
         String originalFilename = file.getOriginalFilename();
-        String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String fileExtension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+             fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
         String newFilename = UUID.randomUUID().toString() + fileExtension;
-        Path filePath = Paths.get(uploadDir + File.separator + newFilename);
+        
+        Path uploadPath = Paths.get(System.getProperty("user.dir"), uploadDir);
+        Path filePath = uploadPath.resolve(newFilename);
+        
         Files.copy(file.getInputStream(), filePath);
-        return "/uploads/" + newFilename; // Return URL path
+        return "/uploads/" + newFilename; 
     }
 
     public List<Post> findAll() {
@@ -89,12 +98,14 @@ public class PostService {
 
     public Post createPost(Post post) {
         Set<Tag> managedTags = new HashSet<>();
-        for (Tag tag : post.getTags()) {
-            Tag existingTag = tagRepository.findByDescription(tag.getDescription());
-            if (existingTag == null) {
-                existingTag = tagRepository.save(tag);
+        if (post.getTags() != null) {
+            for (Tag tag : post.getTags()) {
+                Tag existingTag = tagRepository.findByDescription(tag.getDescription());
+                if (existingTag == null) {
+                    existingTag = tagRepository.save(tag);
+                }
+                managedTags.add(existingTag);
             }
-            managedTags.add(existingTag);
         }
         post.setTags(managedTags);
 
@@ -114,13 +125,10 @@ public class PostService {
             existingPost.setTitle(post.getTitle());
             existingPost.setContent(post.getContent());
             
-            // Only update picturePath if a new one is provided
             if (post.getPicturePath() != null && !post.getPicturePath().isEmpty()) {
                 existingPost.setPicturePath(post.getPicturePath());
             }
 
-            // Status and tags should be updated carefully, or not at all from frontend form
-            // For now, let's assume they might be sent. If not sent, keep existing.
             if (post.getStatus() != null && !post.getStatus().isEmpty()) {
                 existingPost.setStatus(post.getStatus());
             }

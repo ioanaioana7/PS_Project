@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { 
   fetchPostById, 
   fetchCommentsByPostId, 
@@ -8,7 +8,8 @@ import {
   getImageUrl, 
   deleteComment, 
   updateComment,
-  closePost
+  closePost,
+  uploadImage
 } from '../api';
 import CommentVoteControl from '../components/CommentVoteControl';
 import './Home.css';
@@ -18,7 +19,7 @@ import './Home.css';
  */
 function CommentItem({ comment, currentUser, onDelete, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(comment.content);
+  const [editContent, setEditContent] = useState(comment.content || '');
 
   const handleUpdate = async () => {
     try {
@@ -29,12 +30,14 @@ function CommentItem({ comment, currentUser, onDelete, onUpdate }) {
     }
   };
 
+  const commentImage = comment.picturePath ? getImageUrl(comment.picturePath) : null;
+
   return (
-    <div className="comment-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <div className="comment-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
       <div style={{ flex: 1 }}>
         <div className="comment-header">
           <strong>User #{comment.userID}</strong>
-          <span>{comment.createTime}</span>
+          <span style={{ fontSize: '0.75rem', opacity: '0.7', marginLeft: '10px' }}>{comment.createTime}</span>
         </div>
         
         {isEditing ? (
@@ -50,7 +53,12 @@ function CommentItem({ comment, currentUser, onDelete, onUpdate }) {
             </div>
           </div>
         ) : (
-          <p>{comment.content}</p>
+          <div>
+            <p style={{ marginTop: '5px' }}>{comment.content}</p>
+            {commentImage && (
+              <img src={commentImage} alt="Comment" style={{ maxWidth: '150px', borderRadius: '8px', marginTop: '10px' }} />
+            )}
+          </div>
         )}
 
         {currentUser && comment.userID == currentUser.id && !isEditing && (
@@ -77,19 +85,21 @@ function PostDetail() {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
 
   const user = JSON.parse(localStorage.getItem('user'));
 
   const loadData = async () => {
     try {
-      const [postData, commentsData] = await Promise.all([
-        fetchPostById(id),
-        fetchCommentsByPostId(id)
-      ]);
+      const postData = await fetchPostById(id);
+      const commentsData = await fetchCommentsByPostId(id);
+      
       setPost(postData);
-      setComments(Array.isArray(commentsData) ? commentsData : []);
+      const commentList = commentsData.value ? commentsData.value : (Array.isArray(commentsData) ? commentsData : []);
+      setComments(commentList);
     } catch (err) {
       console.error('Failed to fetch post or comments:', err);
       setError('Failed to load post details');
@@ -104,16 +114,23 @@ function PostDetail() {
 
   const handleAddComment = async (e) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() && !selectedFile) return;
     
     if (!user) {
       setError('You must be logged in to comment');
       return;
     }
 
+    setSubmitting(true);
     try {
+      let imageUrl = null;
+      if (selectedFile) {
+        imageUrl = await uploadImage(selectedFile);
+      }
+
       const commentData = {
         content: newComment,
+        picturePath: imageUrl,
         userID: user.id,
         createTime: new Date().toISOString().replace('T', ' ').substring(0, 19),
         post: { id: parseInt(id) }
@@ -121,9 +138,13 @@ function PostDetail() {
       
       await createComment(commentData);
       setNewComment('');
-      loadData(); // Refresh list to show new comment and updated status
+      setSelectedFile(null);
+      loadData(); 
     } catch (err) {
-      setError(err.message || 'Failed to post comment');
+      console.error('Comment error:', err);
+      setError('Failed to post comment');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -139,7 +160,7 @@ function PostDetail() {
   };
 
   const handleClosePost = async () => {
-    if (window.confirm('Mark this post as Outdated? (No more comments will be allowed)')) {
+    if (window.confirm('Mark this post as Outdated?')) {
       try {
         await closePost(id);
         loadData();
@@ -153,7 +174,7 @@ function PostDetail() {
     if (window.confirm('Delete this comment?')) {
       try {
         await deleteComment(commentId);
-        loadData(); // Refresh list
+        loadData();
       } catch (err) {
         alert('Failed to delete comment');
       }
@@ -162,7 +183,7 @@ function PostDetail() {
 
   const handleUpdateComment = async (commentId, updatedData) => {
     await updateComment(commentId, updatedData);
-    loadData(); // Refresh list
+    loadData();
   };
 
   if (loading) return <div className="status-message">Loading post...</div>;
@@ -173,41 +194,18 @@ function PostDetail() {
 
   return (
     <div className="home-container">
-      <div className="post-detail-card">
-        <Link to="/home" className="back-link">← Back to Feed</Link>
+      <div className="post-detail-card" style={{ padding: '40px', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', color: 'white' }}>
+        <Link to="/home" className="back-link" style={{ display: 'inline-block', marginBottom: '20px' }}>← Back to Feed</Link>
         
         {user && post.userID === user.id && (
           <div className="post-detail-actions" style={{ float: 'right', display: 'flex', gap: '10px' }}>
-            <Link to={`/edit-post/${post.id}`} className="edit-btn" style={{ 
-              padding: '8px 16px', 
-              background: 'rgba(255,255,255,0.2)', 
-              color: 'white', 
-              borderRadius: '8px', 
-              textDecoration: 'none',
-              fontWeight: '600'
-            }}>Edit Post</Link>
+            <Link to={`/edit-post/${post.id}`} className="edit-btn" style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.2)', color: 'white', borderRadius: '8px', textDecoration: 'none', fontWeight: '600' }}>Edit Post</Link>
             
             {!isOutdated && (
-              <button onClick={handleClosePost} className="close-btn" style={{ 
-                padding: '8px 16px', 
-                background: 'rgba(255, 193, 7, 0.3)', 
-                color: '#ffc107', 
-                border: '1px solid #ffc107',
-                borderRadius: '8px', 
-                cursor: 'pointer',
-                fontWeight: '600'
-              }}>Mark Outdated</button>
+              <button onClick={handleClosePost} className="close-btn" style={{ padding: '8px 16px', background: 'rgba(255, 193, 7, 0.3)', color: '#ffc107', border: '1px solid #ffc107', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Mark Outdated</button>
             )}
 
-            <button onClick={handleDeletePost} className="delete-btn" style={{ 
-              padding: '8px 16px', 
-              background: 'rgba(239, 68, 68, 0.3)', 
-              color: '#fca5a5', 
-              border: '1px solid #ef4444',
-              borderRadius: '8px', 
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}>Delete Post</button>
+            <button onClick={handleDeletePost} className="delete-btn" style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.3)', color: '#fca5a5', border: '1px solid #ef4444', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Delete Post</button>
           </div>
         )}
 
@@ -215,31 +213,24 @@ function PostDetail() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
           <h1>{post.title}</h1>
-          <span className={`status-badge ${isOutdated ? 'outdated' : 'active'}`} style={{
-            padding: '5px 12px',
-            borderRadius: '15px',
-            background: isOutdated ? '#ef4444' : '#4ade80',
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '0.9rem'
-          }}>
+          <span className={`status-badge ${isOutdated ? 'outdated' : 'active'}`} style={{ padding: '5px 12px', borderRadius: '15px', background: isOutdated ? '#ef4444' : '#4ade80', color: 'white', fontWeight: 'bold', fontSize: '0.9rem' }}>
             {post.status || 'Just Posted'}
           </span>
         </div>
 
-        <div className="post-meta">
+        <div className="post-meta" style={{ opacity: 0.7, marginBottom: '20px' }}>
           <span>By User #{post.userID}</span> • <span>{post.postDate}</span>
         </div>
         <div className="post-content">
-          <p>{post.content}</p>
+          <p style={{ fontSize: '1.1rem', lineHeight: '1.6' }}>{post.content}</p>
           {imageSrc && (
             <div className="image-container" style={{ marginTop: '20px', cursor: 'zoom-in' }} onClick={() => setShowLightbox(true)}>
               <img src={imageSrc} alt="Post" className="post-image" style={{ maxWidth: '100%', borderRadius: '12px' }} />
-              <p style={{ fontSize: '0.8rem', color: '#d1d5db', marginTop: '5px' }}>Click image to enlarge</p>
             </div>
           )}
         </div>
         
+        {/* Lightbox Modal */}
         {showLightbox && (
           <div 
             className="lightbox-overlay" 
@@ -266,9 +257,9 @@ function PostDetail() {
           </div>
         )}
         
-        <div className="tags">
+        <div className="tags" style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
           {post.tags && post.tags.map(tag => (
-            <span key={tag.id} className="tag">#{tag.description}</span>
+            <span key={tag.id} className="tag" style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem' }}>#{tag.description}</span>
           ))}
         </div>
 
@@ -276,9 +267,8 @@ function PostDetail() {
 
         <div className="comments-section">
           <h3>Comments ({comments.length})</h3>
-          {error && <p className="error-message">{error}</p>}
           
-          <div className="comment-list">
+          <div className="comment-list" style={{ marginTop: '20px' }}>
             {comments.map(comment => (
               <CommentItem 
                 key={comment.id} 
@@ -291,21 +281,29 @@ function PostDetail() {
           </div>
 
           {user && !isOutdated ? (
-            <form onSubmit={handleAddComment} className="comment-form">
+            <form onSubmit={handleAddComment} className="comment-form" style={{ marginTop: '30px', background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px' }}>
               <textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Write a comment..."
                 rows="3"
+                style={{ width: '100%', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', padding: '10px', marginBottom: '10px' }}
               />
-              <button type="submit" className="auth-button">Post Comment</button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label htmlFor="commentPicture" style={{ cursor: 'pointer', background: 'rgba(255,255,255,0.1)', padding: '8px 15px', borderRadius: '5px' }}>Attach Image</label>
+                <input type="file" id="commentPicture" accept="image/*" onChange={(e) => setSelectedFile(e.target.files[0])} style={{ display: 'none' }} />
+                {selectedFile && <span style={{ marginLeft: '10px', fontSize: '0.8rem' }}>{selectedFile.name}</span>}
+                <button type="submit" className="auth-button" disabled={submitting} style={{ width: 'auto', padding: '8px 20px' }}>
+                    {submitting ? 'Posting...' : 'Post Comment'}
+                </button>
+              </div>
             </form>
           ) : isOutdated ? (
-            <div className="status-message" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5', textAlign: 'center' }}>
+            <div className="status-message" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5', textAlign: 'center', marginTop: '20px', padding: '15px', borderRadius: '8px' }}>
               Comments are closed for this outdated post.
             </div>
           ) : (
-            <div className="status-message" style={{ textAlign: 'center' }}>
+            <div className="status-message" style={{ textAlign: 'center', marginTop: '20px' }}>
               Please <Link to="/login" style={{ color: 'white', fontWeight: 'bold' }}>Login</Link> to join the conversation.
             </div>
           )}
