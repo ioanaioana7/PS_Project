@@ -1,51 +1,106 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { fetchPostById, fetchCommentsByPostId, createComment } from '../api';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { 
+  fetchPostById, 
+  fetchCommentsByPostId, 
+  createComment, 
+  deletePost, 
+  getImageUrl, 
+  deleteComment, 
+  updateComment 
+} from '../api';
+import CommentVoteControl from '../components/CommentVoteControl';
 import './Home.css';
 
 /**
+ * Single Comment Component
+ */
+function CommentItem({ comment, currentUser, onDelete, onUpdate }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(comment.content);
+
+  const handleUpdate = async () => {
+    try {
+      await onUpdate(comment.id, { ...comment, content: editContent });
+      setIsEditing(false);
+    } catch (err) {
+      alert('Failed to update comment');
+    }
+  };
+
+  return (
+    <div className="comment-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div style={{ flex: 1 }}>
+        <div className="comment-header">
+          <strong>User #{comment.userID}</strong>
+          <span>{comment.createTime}</span>
+        </div>
+        
+        {isEditing ? (
+          <div className="edit-comment-area" style={{ marginTop: '10px' }}>
+            <textarea 
+              value={editContent} 
+              onChange={(e) => setEditContent(e.target.value)}
+              style={{ width: '100%', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', padding: '10px' }}
+            />
+            <div style={{ marginTop: '5px', display: 'flex', gap: '5px' }}>
+              <button onClick={handleUpdate} className="nav-btn" style={{ fontSize: '0.8rem', padding: '5px 10px', background: '#4ade80', border: 'none', color: 'white' }}>Save</button>
+              <button onClick={() => setIsEditing(false)} className="nav-btn" style={{ fontSize: '0.8rem', padding: '5px 10px', background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white' }}>Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <p>{comment.content}</p>
+        )}
+
+        {currentUser && comment.userID == currentUser.id && !isEditing && (
+          <div className="comment-actions" style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+            <button onClick={() => setIsEditing(true)} style={{ background: 'none', border: 'none', color: '#e9e9ff', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}>Edit</button>
+            <button onClick={() => onDelete(comment.id)} style={{ background: 'none', border: 'none', color: '#fca5a5', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}>Delete</button>
+          </div>
+        )}
+      </div>
+      
+      <CommentVoteControl commentId={comment.id} />
+    </div>
+  );
+}
+
+/**
  * Post Detail Component
- * Displays a single post with all its content and associated comments.
  */
 function PostDetail() {
-  // Extract post ID from URL parameters
   const { id } = useParams();
+  const navigate = useNavigate();
   
-  // Component state
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
   const [error, setError] = useState('');
+  const [showLightbox, setShowLightbox] = useState(false);
 
-  // Get current user from localStorage for comment attribution
   const user = JSON.parse(localStorage.getItem('user'));
 
-  /**
-   * Fetches post data and comments concurrently on component mount or ID change
-   */
+  const loadData = async () => {
+    try {
+      const [postData, commentsData] = await Promise.all([
+        fetchPostById(id),
+        fetchCommentsByPostId(id)
+      ]);
+      setPost(postData);
+      setComments(Array.isArray(commentsData) ? commentsData : []);
+    } catch (err) {
+      console.error('Failed to fetch post or comments:', err);
+      setError('Failed to load post details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [postData, commentsData] = await Promise.all([
-          fetchPostById(id),
-          fetchCommentsByPostId(id)
-        ]);
-        setPost(postData);
-        setComments(commentsData);
-      } catch (err) {
-        console.error('Failed to fetch post or comments:', err);
-        setError('Failed to load post details');
-      } finally {
-        setLoading(false);
-      }
-    };
     loadData();
   }, [id]);
 
-  /**
-   * Submits a new comment to the Posts microservice
-   */
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -56,74 +111,146 @@ function PostDetail() {
     }
 
     try {
-      // Prepare comment payload with required entity structure
       const commentData = {
         content: newComment,
         userID: user.id,
-        // Format date for backend (yyyy-MM-dd HH:mm:ss)
         createTime: new Date().toISOString().replace('T', ' ').substring(0, 19),
         post: { id: parseInt(id) }
       };
       
-      const created = await createComment(commentData);
-      
-      // Update local state to show the new comment immediately
-      setComments(prev => [...prev, created]);
+      await createComment(commentData);
       setNewComment('');
-      setError('');
+      loadData(); // Refresh list
     } catch (err) {
-      // Catch err to help with debugging
-      console.error('Comment submission failed:', err);
       setError('Failed to post comment');
     }
   };
 
+  const handleDeletePost = async () => {
+    if (window.confirm('Are you sure you want to delete this post?')) {
+      try {
+        await deletePost(id);
+        navigate('/home');
+      } catch (err) {
+        setError('Failed to delete post: ' + err.message);
+      }
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (window.confirm('Delete this comment?')) {
+      try {
+        await deleteComment(commentId);
+        loadData(); // Refresh list
+      } catch (err) {
+        alert('Failed to delete comment');
+      }
+    }
+  };
+
+  const handleUpdateComment = async (commentId, updatedData) => {
+    await updateComment(commentId, updatedData);
+    loadData(); // Refresh list
+  };
+
   if (loading) return <div className="status-message">Loading post...</div>;
   if (!post) return <div className="status-message error">Post not found</div>;
+
+  const imageSrc = getImageUrl(post.picturePath);
 
   return (
     <div className="home-container">
       <div className="post-detail-card">
         <Link to="/home" className="back-link">← Back to Feed</Link>
         
-        {/* Post Content */}
+        {user && post.userID === user.id && (
+          <div className="post-detail-actions" style={{ float: 'right', display: 'flex', gap: '10px' }}>
+            <Link to={`/edit-post/${post.id}`} className="edit-btn" style={{ 
+              padding: '8px 16px', 
+              background: 'rgba(255,255,255,0.2)', 
+              color: 'white', 
+              borderRadius: '8px', 
+              textDecoration: 'none',
+              fontWeight: '600'
+            }}>Edit Post</Link>
+            <button onClick={handleDeletePost} className="delete-btn" style={{ 
+              padding: '8px 16px', 
+              background: 'rgba(239, 68, 68, 0.3)', 
+              color: '#fca5a5', 
+              border: '1px solid #ef4444',
+              borderRadius: '8px', 
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}>Delete Post</button>
+          </div>
+        )}
+
+        <div style={{ clear: 'both' }}></div>
+
         <h1>{post.title}</h1>
         <div className="post-meta">
           <span>By User #{post.userID}</span> • <span>{post.postDate}</span>
         </div>
         <div className="post-content">
           <p>{post.content}</p>
-          {post.picturePath && <img src={post.picturePath} alt="Post" className="post-image" />}
+          {imageSrc && (
+            <div className="image-container" style={{ marginTop: '20px', cursor: 'zoom-in' }} onClick={() => setShowLightbox(true)}>
+              <img src={imageSrc} alt="Post" className="post-image" style={{ maxWidth: '100%', borderRadius: '12px' }} />
+              <p style={{ fontSize: '0.8rem', color: '#d1d5db', marginTop: '5px' }}>Click image to enlarge</p>
+            </div>
+          )}
         </div>
         
-        {/* Post Tags */}
+        {showLightbox && (
+          <div 
+            className="lightbox-overlay" 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              background: 'rgba(0,0,0,0.9)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 1000,
+              cursor: 'zoom-out'
+            }}
+            onClick={() => setShowLightbox(false)}
+          >
+            <img 
+              src={imageSrc} 
+              alt="Enlarged" 
+              style={{ maxWidth: '90%', maxHeight: '90%', borderRadius: '8px', boxShadow: '0 0 20px rgba(0,0,0,0.5)' }} 
+            />
+          </div>
+        )}
+        
         <div className="tags">
           {post.tags && post.tags.map(tag => (
             <span key={tag.id} className="tag">#{tag.description}</span>
           ))}
         </div>
 
-        <hr />
+        <hr style={{ opacity: 0.2, margin: '30px 0' }} />
 
-        {/* Comments Section */}
         <div className="comments-section">
           <h3>Comments ({comments.length})</h3>
           {error && <p className="error-message">{error}</p>}
           
-          {/* List of comments */}
           <div className="comment-list">
             {comments.map(comment => (
-              <div key={comment.id} className="comment-item">
-                <div className="comment-header">
-                  <strong>User #{comment.userID}</strong>
-                  <span>{comment.createTime}</span>
-                </div>
-                <p>{comment.content}</p>
-              </div>
+              <CommentItem 
+                key={comment.id} 
+                comment={comment} 
+                currentUser={user}
+                onDelete={handleDeleteComment}
+                onUpdate={handleUpdateComment}
+              />
             ))}
           </div>
 
-          {/* Add Comment Form (only shown if logged in) */}
           {user && (
             <form onSubmit={handleAddComment} className="comment-form">
               <textarea
