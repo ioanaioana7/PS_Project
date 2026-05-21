@@ -2,9 +2,9 @@ name: Unit Tests
 
 on:
   push:
-    branches: [ main, Ioana ]
+    branches: [ main, Ioana, Doriana2, George ]
   pull_request:
-    branches: [ main, Ioana ]
+    branches: [ main, Ioana, Doriana2, George ]
 
 jobs:
   frontend-tests:
