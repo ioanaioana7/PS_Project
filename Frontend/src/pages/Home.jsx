@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Home.css';
-import { fetchPosts, deletePost, getImageUrl } from '../api';
+import { fetchPosts, deletePost, getImageUrl, closePost } from '../api';
 import VoteControl from '../components/VoteControl';
 
 /**
  * Home Component
  * Fix: Uses getImageUrl to robustly show post pictures.
+ * Added: Post status display and "Close Post" functionality.
+ * Added: Tag display support.
  */
 function Home() {
   const navigate = useNavigate();
@@ -43,6 +45,17 @@ function Home() {
     }
   };
 
+  const handleClose = async (postId) => {
+    if (window.confirm('Mark this post as Outdated?')) {
+      try {
+        await closePost(postId);
+        loadPosts();
+      } catch (err) {
+        alert('Failed to close post: ' + err.message);
+      }
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('user');
     navigate('/login');
@@ -73,11 +86,38 @@ function Home() {
           {posts.map((post) => (
             <article key={post.id} className="post-card">
               <div className="post-content-wrapper">
-                <Link to={`/post/${post.id}`} className="post-link">
-                  <h2>{post.title || 'Untitled post'}</h2>
-                </Link>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <Link to={`/post/${post.id}`} className="post-link">
+                    <h2>{post.title || 'Untitled post'}</h2>
+                  </Link>
+                  <span className={`status-badge ${post.status === 'Outdated' ? 'outdated' : 'active'}`} style={{
+                    fontSize: '0.7rem',
+                    padding: '3px 7px',
+                    borderRadius: '10px',
+                    background: post.status === 'Outdated' ? '#ef4444' : '#4ade80',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {post.status || 'Just Posted'}
+                  </span>
+                </div>
+                
                 <p>{post.content ? (post.content.substring(0, 100) + '...') : 'No content provided.'}</p>
                 
+                {/* Tags Section */}
+                <div className="post-tags" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', margin: '10px 0' }}>
+                  {post.tags && post.tags.map(tag => (
+                    <span key={tag.id} style={{ 
+                      fontSize: '0.7rem', 
+                      background: 'rgba(255,255,255,0.15)', 
+                      padding: '2px 8px', 
+                      borderRadius: '10px',
+                      border: '1px solid rgba(255,255,255,0.1)'
+                    }}>#{tag.description}</span>
+                  ))}
+                </div>
+
                 {post.picturePath && (
                   <div className="post-thumbnail" style={{ margin: '10px 0', borderRadius: '8px', overflow: 'hidden', height: '150px' }}>
                     <img 
@@ -93,8 +133,9 @@ function Home() {
                   <span>Post ID: {post.id}</span>
                   <span>User ID: {post.userID}</span>
                 </div>
+                
                 {user && post.userID === user.id && (
-                  <div className="post-actions" style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
+                  <div className="post-actions" style={{ marginTop: '15px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     <Link to={`/edit-post/${post.id}`} className="edit-btn" style={{ 
                       padding: '6px 12px', 
                       background: 'rgba(255,255,255,0.2)', 
@@ -103,6 +144,19 @@ function Home() {
                       textDecoration: 'none',
                       fontSize: '0.85rem'
                     }}>Edit</Link>
+                    
+                    {post.status !== 'Outdated' && (
+                      <button onClick={() => handleClose(post.id)} className="close-btn" style={{ 
+                        padding: '6px 12px', 
+                        background: 'rgba(255, 193, 7, 0.3)', 
+                        color: '#ffc107', 
+                        border: '1px solid #ffc107',
+                        borderRadius: '6px', 
+                        cursor: 'pointer',
+                        fontSize: '0.85rem'
+                      }}>Mark Outdated</button>
+                    )}
+
                     <button onClick={() => handleDelete(post.id)} className="delete-btn" style={{ 
                       padding: '6px 12px', 
                       background: 'rgba(239, 68, 68, 0.3)', 

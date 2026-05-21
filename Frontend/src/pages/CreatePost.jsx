@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { createPost, uploadImage } from '../api';
 import './CreatePost.css';
 
+/**
+ * CreatePost Component
+ * Allows users to create a new post with tags and image.
+ */
 function CreatePost() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
@@ -12,6 +16,8 @@ function CreatePost() {
     content: '',
     picturePath: '', 
   });
+  
+  const [tagsInput, setTagsInput] = useState(''); // Comma separated tags
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [error, setError] = useState('');
@@ -48,6 +54,16 @@ function CreatePost() {
       return;
     }
 
+    // Tag Validation: At least one tag
+    const tagsArray = tagsInput.split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0);
+    
+    if (tagsArray.length === 0) {
+      setError('Please add at least one tag');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -59,11 +75,11 @@ function CreatePost() {
 
       const postData = {
         ...formData,
-        picturePath: imageUrl, // Now storing the URL
+        picturePath: imageUrl,
         userID: user.id,
         postDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        status: 'OPEN',
-        tags: []
+        status: 'Just Posted',
+        tags: tagsArray.map(tag => ({ description: tag }))
       };
 
       await createPost(postData);
@@ -93,6 +109,7 @@ function CreatePost() {
               required
             />
           </div>
+          
           <div className="form-group">
             <label htmlFor="content">Content</label>
             <textarea
@@ -105,6 +122,22 @@ function CreatePost() {
               required
             ></textarea>
           </div>
+
+          <div className="form-group">
+            <label htmlFor="tags">Tags (comma separated)</label>
+            <input
+              type="text"
+              id="tags"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="e.g. bug, high-priority, frontend"
+              required
+            />
+            <p style={{ fontSize: '0.75rem', marginTop: '5px', color: '#d1d5db' }}>
+              Separate multiple tags with commas. New tags will be created automatically.
+            </p>
+          </div>
+
           <div className="form-group">
             <label htmlFor="picture">Image</label>
             <input
@@ -119,13 +152,8 @@ function CreatePost() {
                 <img src={previewUrl} alt="Preview" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
               </div>
             )}
-            {!previewUrl && formData.picturePath && ( // Display existing image if no new file is selected
-              <div className="image-preview" style={{ marginTop: '15px', borderRadius: '10px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.2)' }}>
-                <p style={{ fontSize: '0.8rem', padding: '5px', background: 'rgba(255,255,255,0.1)' }}>Current Image:</p>
-                <img src={formData.picturePath} alt="Current" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
-              </div>
-            )}
           </div>
+
           <button type="submit" className="submit-btn" disabled={loading}>
             {loading ? 'Publishing...' : 'Publish Post'}
           </button>

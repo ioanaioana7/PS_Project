@@ -7,7 +7,8 @@ import {
   deletePost, 
   getImageUrl, 
   deleteComment, 
-  updateComment 
+  updateComment,
+  closePost
 } from '../api';
 import CommentVoteControl from '../components/CommentVoteControl';
 import './Home.css';
@@ -120,9 +121,9 @@ function PostDetail() {
       
       await createComment(commentData);
       setNewComment('');
-      loadData(); // Refresh list
+      loadData(); // Refresh list to show new comment and updated status
     } catch (err) {
-      setError('Failed to post comment');
+      setError(err.message || 'Failed to post comment');
     }
   };
 
@@ -133,6 +134,17 @@ function PostDetail() {
         navigate('/home');
       } catch (err) {
         setError('Failed to delete post: ' + err.message);
+      }
+    }
+  };
+
+  const handleClosePost = async () => {
+    if (window.confirm('Mark this post as Outdated? (No more comments will be allowed)')) {
+      try {
+        await closePost(id);
+        loadData();
+      } catch (err) {
+        alert('Failed to close post');
       }
     }
   };
@@ -157,6 +169,7 @@ function PostDetail() {
   if (!post) return <div className="status-message error">Post not found</div>;
 
   const imageSrc = getImageUrl(post.picturePath);
+  const isOutdated = post.status === 'Outdated';
 
   return (
     <div className="home-container">
@@ -173,6 +186,19 @@ function PostDetail() {
               textDecoration: 'none',
               fontWeight: '600'
             }}>Edit Post</Link>
+            
+            {!isOutdated && (
+              <button onClick={handleClosePost} className="close-btn" style={{ 
+                padding: '8px 16px', 
+                background: 'rgba(255, 193, 7, 0.3)', 
+                color: '#ffc107', 
+                border: '1px solid #ffc107',
+                borderRadius: '8px', 
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}>Mark Outdated</button>
+            )}
+
             <button onClick={handleDeletePost} className="delete-btn" style={{ 
               padding: '8px 16px', 
               background: 'rgba(239, 68, 68, 0.3)', 
@@ -187,7 +213,20 @@ function PostDetail() {
 
         <div style={{ clear: 'both' }}></div>
 
-        <h1>{post.title}</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h1>{post.title}</h1>
+          <span className={`status-badge ${isOutdated ? 'outdated' : 'active'}`} style={{
+            padding: '5px 12px',
+            borderRadius: '15px',
+            background: isOutdated ? '#ef4444' : '#4ade80',
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '0.9rem'
+          }}>
+            {post.status || 'Just Posted'}
+          </span>
+        </div>
+
         <div className="post-meta">
           <span>By User #{post.userID}</span> • <span>{post.postDate}</span>
         </div>
@@ -251,7 +290,7 @@ function PostDetail() {
             ))}
           </div>
 
-          {user && (
+          {user && !isOutdated ? (
             <form onSubmit={handleAddComment} className="comment-form">
               <textarea
                 value={newComment}
@@ -261,6 +300,14 @@ function PostDetail() {
               />
               <button type="submit" className="auth-button">Post Comment</button>
             </form>
+          ) : isOutdated ? (
+            <div className="status-message" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5', textAlign: 'center' }}>
+              Comments are closed for this outdated post.
+            </div>
+          ) : (
+            <div className="status-message" style={{ textAlign: 'center' }}>
+              Please <Link to="/login" style={{ color: 'white', fontWeight: 'bold' }}>Login</Link> to join the conversation.
+            </div>
           )}
         </div>
       </div>

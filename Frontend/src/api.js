@@ -2,6 +2,7 @@ const USERS_API = import.meta.env.VITE_USERS_API || 'http://localhost:8080/user'
 const POSTS_API = import.meta.env.VITE_POSTS_API || 'http://localhost:8081/post';
 const COMMENTS_API = import.meta.env.VITE_COMMENTS_API || 'http://localhost:8081/comment';
 const VOTES_API = import.meta.env.VITE_VOTES_API || 'http://localhost:8081/vote';
+const TAGS_API = import.meta.env.VITE_POSTS_API || 'http://localhost:8081/tag';
 
 // Base URL for Posts Service (Port 8081)
 const POSTS_BASE_URL = POSTS_API.replace('/post', '');
@@ -79,6 +80,10 @@ export function deletePost(id) {
   return apiDelete(`${POSTS_API}/delete/${id}`);
 }
 
+export function closePost(id) {
+  return apiPut(`${POSTS_API}/close/${id}`, {});
+}
+
 export function fetchCommentsByPostId(postId) {
   return apiGet(`${COMMENTS_API}/${postId}`);
 }
@@ -110,6 +115,11 @@ export function voteComment(commentId, userId, upvote) {
 
 export function fetchCommentVoteCount(commentId) {
   return apiGet(`${VOTES_API}/comment/${commentId}/count`);
+}
+
+// Tag API
+export function fetchTags() {
+  return apiGet(`${TAGS_API}/getTags`);
 }
 
 /**

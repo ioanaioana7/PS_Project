@@ -30,24 +30,23 @@ public class CommentService {
 
     public Comment save(Comment comment) {
         if (comment.getPost() == null || comment.getPost().getId() == null) {
-            System.out.println("Error: Post does not exist");
-            return null;
+            throw new IllegalArgumentException("Post does not exist");
         }
 
         Post post = postRepository.findById(comment.getPost().getId()).orElse(null);
 
         if (post == null) {
-            System.out.println("Error: Post does not exist");
-            return null;
+            throw new IllegalArgumentException("Post does not exist");
         }
 
+        // Rule: Outdated -> no more comments can be added
         if ("Outdated".equals(post.getStatus())) {
-            System.out.println("Comments are closed");
-            return null;
+            throw new IllegalStateException("Comments are closed for this post");
         }
 
         List<Comment> comments = commentRepository.findByPostId(post.getId().intValue());
 
+        // Rule: First Reactions -> when the first comment was posted
         if (comments.isEmpty()) {
             post.setStatus("First Reactions");
             postRepository.save(post);

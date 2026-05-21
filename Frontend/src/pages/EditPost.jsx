@@ -7,6 +7,7 @@ import './CreatePost.css';
  * EditPost Component
  * Allows users to modify their existing posts.
  * Fixes: Input freezing by ensuring state is always updated.
+ * Added: Tag editing support.
  */
 function EditPost() {
   const { id } = useParams();
@@ -23,6 +24,7 @@ function EditPost() {
     tags: []
   });
   
+  const [tagsInput, setTagsInput] = useState(''); // Comma separated tags
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [error, setError] = useState('');
@@ -39,6 +41,12 @@ function EditPost() {
           return;
         }
         setFormData(data);
+        
+        // Initialize tags input
+        if (data.tags && Array.isArray(data.tags)) {
+          setTagsInput(data.tags.map(t => t.description).join(', '));
+        }
+
         if (data.picturePath) {
           setPreviewUrl(getImageUrl(data.picturePath));
         }
@@ -54,7 +62,6 @@ function EditPost() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // CRITICAL: Ensure we use the functional update pattern to avoid stale state issues
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -75,6 +82,17 @@ function EditPost() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Tag Validation
+    const tagsArray = tagsInput.split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0);
+    
+    if (tagsArray.length === 0) {
+      setError('Please add at least one tag');
+      return;
+    }
+
     setUpdating(true);
     setError('');
 
@@ -86,7 +104,8 @@ function EditPost() {
 
       const updatedPayload = {
         ...formData,
-        picturePath: imageUrl
+        picturePath: imageUrl,
+        tags: tagsArray.map(tag => ({ description: tag }))
       };
 
       await updatePost(id, updatedPayload);
@@ -121,6 +140,7 @@ function EditPost() {
               id="title"
               name="title"
               value={formData.title || ''}
+              onInput={handleChange} 
               onChange={handleChange}
               placeholder="Enter post title"
               required
@@ -133,11 +153,24 @@ function EditPost() {
               id="content"
               name="content"
               value={formData.content || ''}
+              onInput={handleChange}
               onChange={handleChange}
               placeholder="Update your content..."
               rows="6"
               required
             ></textarea>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="tags">Tags (comma separated)</label>
+            <input
+              type="text"
+              id="tags"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="e.g. bug, fix, api"
+              required
+            />
           </div>
 
           <div className="form-group">
