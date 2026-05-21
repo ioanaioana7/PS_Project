@@ -4,7 +4,9 @@ import com.utcn.demo.entity.Post;
 import com.utcn.demo.service.PostService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -13,6 +15,16 @@ import java.util.List;
 public class PostController {
 
     @Autowired private PostService postService;
+
+    @PostMapping("/uploadImage")
+    public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) {
+        try {
+            String imageUrl = postService.saveImage(file);
+            return ResponseEntity.ok(imageUrl);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Failed to upload image: " + e.getMessage());
+        }
+    }
 
     @GetMapping("/getPosts")
     public List<Post> getPosts() {

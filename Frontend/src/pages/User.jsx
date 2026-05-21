@@ -100,6 +100,7 @@ function User() {
           </div>
         </div>
         <div className="user-actions">
+          <Link to="/edit-user" className="user-link" style={{ background: '#667eea', color: 'white' }}>Edit Profile</Link>
           <Link to="/home" className="user-link">Back to Home</Link>
           <button type="button" onClick={handleLogout} className="logout-button">Logout</button>
         </div>
