@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Home.css';
 import { fetchPosts, deletePost, getImageUrl, closePost } from '../api';
@@ -6,30 +6,43 @@ import VoteControl from '../components/VoteControl';
 
 /**
  * Home Component
- * Fix: Uses getImageUrl to robustly show post pictures.
- * Added: Post status display and "Close Post" functionality.
- * Added: Tag display support.
+ * Updated: Added filtering by title, tag, and own-posts.
  */
 function Home() {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Filter states
+  const [searchTitle, setSearchTitle] = useState('');
+  const [searchTag, setSearchTag] = useState('');
+  const [onlyMyPosts, setOnlyMyPosts] = useState(false);
+  
   const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
     loadPosts();
-  }, []);
+  }, [searchTitle, searchTag, onlyMyPosts]);
 
   const loadPosts = () => {
     setLoading(true);
-    fetchPosts()
+    // Use the /search endpoint if any filters are active
+    const params = new URLSearchParams();
+    if (searchTitle) params.append('title', searchTitle);
+    if (searchTag) params.append('tag', searchTag);
+    if (onlyMyPosts && user) params.append('userID', user.id);
+
+    const url = params.toString() ? `http://localhost:8081/post/search?${params.toString()}` : 'http://localhost:8081/post/getPosts';
+
+    fetch(url)
+      .then(res => res.json())
       .then((data) => {
         setPosts(Array.isArray(data) ? data : []);
         setLoading(false)
       })
       .catch((err) => {
-        setError(err.message || 'Could not load posts.');
+        setError('Could not load posts.');
         setLoading(false);
       });
   };
@@ -72,6 +85,16 @@ function Home() {
         </div>
       </nav>
 
+      {/* Filter Bar */}
+      <section className="filter-section" style={{ padding: '20px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <input type="text" placeholder="Search by title..." value={searchTitle} onChange={(e) => setSearchTitle(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: 'none' }} />
+        <input type="text" placeholder="Filter by tag..." value={searchTag} onChange={(e) => setSearchTag(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: 'none' }} />
+        <label style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <input type="checkbox" checked={onlyMyPosts} onChange={(e) => setOnlyMyPosts(e.target.checked)} />
+          My Posts
+        </label>
+      </section>
+
       <section className="posts-section">
         <h1>Latest Posts</h1>
 
@@ -79,7 +102,7 @@ function Home() {
         {error && <div className="status-message error-message">{error}</div>}
         
         {!loading && !error && posts.length === 0 && (
-          <div className="status-message">No posts available.</div>
+          <div className="status-message">No posts found.</div>
         )}
 
         <div className="posts-grid">
@@ -105,7 +128,6 @@ function Home() {
                 
                 <p>{post.content ? (post.content.substring(0, 100) + '...') : 'No content provided.'}</p>
                 
-                {/* Tags Section */}
                 <div className="post-tags" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', margin: '10px 0' }}>
                   {post.tags && post.tags.map(tag => (
                     <span key={tag.id} style={{ 
@@ -129,11 +151,6 @@ function Home() {
                   </div>
                 )}
 
-                <div className="post-meta">
-                  <span>Post ID: {post.id}</span>
-                  <span>User ID: {post.userID}</span>
-                </div>
-                
                 {user && post.userID === user.id && (
                   <div className="post-actions" style={{ marginTop: '15px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     <Link to={`/edit-post/${post.id}`} className="edit-btn" style={{ 
