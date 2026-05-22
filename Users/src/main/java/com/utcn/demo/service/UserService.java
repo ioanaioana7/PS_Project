@@ -1,23 +1,21 @@
 package com.utcn.demo.service;
 
-import java.util.List;
-import java.util.Optional;
+import com.utcn.demo.entity.User;
+import com.utcn.demo.repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.utcn.demo.entity.User;
-import com.utcn.demo.repository.UserRepository;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    @Autowired private UserRepository userRepository;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @Autowired private PasswordEncoder passwordEncoder;
 
     public List<User> findAll() {
         List<User> users = (List<User>) userRepository.findAll();
@@ -26,7 +24,7 @@ public class UserService {
 
     public User findById(int id) {
         Optional<User> user = userRepository.findById(Long.valueOf(id));
-        if(user.isPresent()){
+        if (user.isPresent()) {
             return user.get();
         }
         return null;
@@ -43,6 +41,10 @@ public class UserService {
         return null;
     }
 
+    public int updateScore(Long userID, float score) {
+        return userRepository.updateScoreByUserID(score, userID);
+    }
+
     public User save(User user) {
         // Encrypt password
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
@@ -54,5 +56,4 @@ public class UserService {
     public void delete(User user) {
         userRepository.delete(user);
     }
-
 }
