@@ -34,7 +34,8 @@ public class Post {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime postDate;
 
-    @Column private String picturePath;
+    @Column(columnDefinition = "LONGTEXT")
+    private String picturePath;
     @Column private String status;
 
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})

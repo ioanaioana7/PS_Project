@@ -10,7 +10,7 @@ test('renders Login heading', () => {
     </BrowserRouter>
   );
   
-  const headingElement = screen.getByText(/Login/i);
+  const headingElement = screen.getByRole('heading', { name: /Login/i });
   expect(headingElement).toBeInTheDocument();
 });
 
