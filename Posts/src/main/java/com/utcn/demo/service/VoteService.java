@@ -3,7 +3,9 @@ package com.utcn.demo.service;
 import com.utcn.demo.entity.Comment;
 import com.utcn.demo.entity.Post;
 import com.utcn.demo.entity.Vote;
+import com.utcn.demo.feign.IUserScoreClient;
 import com.utcn.demo.repository.VoteRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,51 +13,77 @@ import java.util.Optional;
 
 @Service
 public class VoteService {
-    @Autowired
-    private VoteRepository voteRepository;
-    @Autowired
-    private PostService postService;
-    @Autowired
-    private CommentService commentService;
+    @Autowired private VoteRepository voteRepository;
+    @Autowired private PostService postService;
+    @Autowired private CommentService commentService;
+    @Autowired private IUserScoreClient userScoreClient;
 
-    public Vote votePost(Long userID, Long postID, boolean upvote){
+    public Vote votePost(Long userID, Long postID, boolean upvote) {
         Post post = postService.findById(postID.intValue());
-        if(post == null){
+        if (post == null) {
             throw new IllegalArgumentException("Post not found");
         }
-        //nu poti vota propriul post
-        if(post.getUserID().equals(userID)){
+        // nu poti vota propriul post
+        if (post.getUserID().equals(userID)) {
             return null;
         }
+
         Optional<Vote> existingVote = voteRepository.findByUserIDAndPostID(userID, postID);
-        if(existingVote.isPresent()){
-            //actualizeaza votul deja existent
+        if (existingVote.isPresent()) {
+            // actualizeaza votul deja existent si trimitere user score-ul corespunzator
             Vote vote = existingVote.get();
-            vote.setUpvote(upvote);
-            return voteRepository.save(vote);
+            if (vote.isUpvote() != upvote && upvote == true) {
+                vote.setUpvote(upvote);
+                userScoreClient.updateScore(post.getUserID(), 4.0f);
+                return voteRepository.save(vote);
+            } else if (vote.isUpvote() != upvote) {
+                vote.setUpvote(upvote);
+                userScoreClient.updateScore(post.getUserID(), -4.0f);
+                return voteRepository.save(vote);
+            }
+            return vote;
         }
+        // update user Score
+        if (upvote == true) userScoreClient.updateScore(post.getUserID(), 2.5f);
+        else userScoreClient.updateScore(post.getUserID(), -1.5f);
         Vote vote = new Vote();
         vote.setUserID(userID);
         vote.setPostID(postID);
         vote.setUpvote(upvote);
+
         return voteRepository.save(vote);
     }
 
-    //voteaza un comm, ret null daca user voteaza propriul comm
-    public Vote voteComment(Long userID, Long commentID, boolean upvote){
+    // voteaza un comm, ret null daca user voteaza propriul comm
+    public Vote voteComment(Long userID, Long commentID, boolean upvote) {
         Comment comment = commentService.findById(commentID.intValue());
-        if(comment == null){
+        if (comment == null) {
             throw new IllegalArgumentException("Comment not found");
         }
-        //comm propriu
-        if(Long.valueOf(comment.getUserID()).equals(userID)){
+        // comm propriu
+        if (Long.valueOf(comment.getUserID()).equals(userID)) {
             return null;
         }
         Optional<Vote> existingVote = voteRepository.findByUserIDAndCommentID(userID, commentID);
-        if(existingVote.isPresent()){
+        if (existingVote.isPresent()) {
             Vote vote = existingVote.get();
-            vote.setUpvote(upvote);
-            return voteRepository.save(vote);
+            if (vote.isUpvote() != upvote && upvote == true) {
+                vote.setUpvote(upvote);
+                userScoreClient.updateScore(comment.getUserID(), 7.5f);
+                userScoreClient.updateScore(userID, 1.5f);
+                return voteRepository.save(vote);
+            } else if (vote.isUpvote() != upvote) {
+                vote.setUpvote(upvote);
+                userScoreClient.updateScore(comment.getUserID(), -7.5f);
+                userScoreClient.updateScore(userID, -1.5f);
+                return voteRepository.save(vote);
+            }
+            return vote;
+        }
+        if (upvote == true) userScoreClient.updateScore(comment.getUserID(), 5.f);
+        else {
+            userScoreClient.updateScore(comment.getUserID(), -2.5f);
+            userScoreClient.updateScore(userID, -1.5f);
         }
         Vote vote = new Vote();
         vote.setUserID(userID);

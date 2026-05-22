@@ -28,6 +28,14 @@ public class User {
     private boolean role;
     @Column
     private String password;
+    @Column
+    private float score;
 
-
+    public User(Long id, String name, String email, boolean role, String password) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.role = role;
+        this.password = password;
+    }
 }
