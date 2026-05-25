@@ -33,14 +33,29 @@ public class UserController {
         String password = credentials.get("password");
         User user = userService.login(email, password);
         if (user != null) {
-            return ResponseEntity.ok(user);
+            if (!userService.isBannned(user)){
+                return ResponseEntity.ok(user);
+            }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User is currently banned");
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
         }
     }
 
+    @PostMapping("/banstatus/{userID}")
+    public ResponseEntity<String> changeUserBanStatus(
+            @PathVariable Long userID, @RequestParam boolean banstatus) {
+        boolean worked = userService.changeUserBanStatus(userID, banstatus);
+        if (worked) {
+            return ResponseEntity.ok("The user status changed");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
+    }
+
     @PostMapping("/score/{userID}")
-    public ResponseEntity<String> updateScore(@PathVariable Long userID, @RequestParam float score) {
+    public ResponseEntity<String> updateScore(
+            @PathVariable Long userID, @RequestParam float score) {
         int worked = userService.updateScore(userID, score);
         if (worked != 0) {
             return ResponseEntity.ok("The user score was updated");
