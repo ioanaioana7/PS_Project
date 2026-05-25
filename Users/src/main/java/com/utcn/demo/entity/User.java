@@ -25,7 +25,11 @@ public class User {
     @Column
     private String email;
     @Column
+    private String phone;
+    @Column(nullable = false)
     private boolean role;
+    @Column
+    private boolean bannned;
     @Column
     private String password;
     @Column

@@ -1,13 +1,17 @@
 package com.utcn.demo.service;
 
 import com.utcn.demo.entity.User;
+import com.utcn.demo.messages.EmailMessage;
 import com.utcn.demo.repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -39,6 +43,74 @@ public class UserService {
             }
         }
         return null;
+    }
+
+    public boolean isBannned(User user) {
+        return user.isBannned();
+    }
+
+    public boolean changeUserBanStatus(long userID, boolean banStatus) {
+        Optional<User> user = userRepository.findById(userID);
+        if (user.isPresent()) {
+            User u = user.get();
+            if (u.isBannned() != banStatus) {
+                if (banStatus == true) {
+                    try {
+                        Map<String, String> requestBody = new HashMap<>();
+                        requestBody.put("phone", u.getPhone());
+                        requestBody.put(
+                                "message",
+                                """
+                                    Dear User,
+
+                                    We are sorry to inform you that you were banned.
+                                """);
+                        RestTemplate restTemplate = new RestTemplate();
+                        restTemplate.postForObject(
+                                "http://localhost:3000/send-message", requestBody, Map.class);
+                        EmailMessage.sendEmail(
+                                u.getEmail(),
+                                """
+                                Dear User,
+
+                                We are sorry to inform you that you were banned.
+                                """);
+                    } catch (Exception e) {
+
+                        System.out.println(e.getMessage());
+                    }
+                    u.setBannned(true);
+                } else {
+                    try {
+                        Map<String, String> requestBody = new HashMap<>();
+                        requestBody.put("phone", u.getPhone());
+                        requestBody.put(
+                                "message",
+                                """
+                                    Dear User,
+
+                                    We are happy to inform you that you have just been unbanned.
+                                """);
+                        RestTemplate restTemplate = new RestTemplate();
+                        restTemplate.postForObject(
+                                "http://localhost:3000/send-message", requestBody, Map.class);
+                        EmailMessage.sendEmail(
+                                u.getEmail(),
+                                """
+                                Dear User,
+
+                                We are happy to inform you that you have just been unbanned.
+                                """);
+                    } catch (Exception e) {
+                        System.out.println("Email coudnt be send");
+                    }
+                    u.setBannned(false);
+                }
+                userRepository.save(u);
+            }
+            return true;
+        }
+        return false;
     }
 
     public int updateScore(Long userID, float score) {
