@@ -91,8 +91,16 @@ function User() {
             <strong>{user.email}</strong>
           </div>
           <div className="detail-row">
+            <span>Phone</span>
+            <strong>{user.phone || 'N/A'}</strong>
+          </div>
+          <div className="detail-row">
             <span>Role</span>
             <strong>{user.role ? 'Admin' : 'User'}</strong>
+          </div>
+          <div className="detail-row">
+            <span>Score</span>
+            <strong>{user.score}</strong>
           </div>
           <div className="detail-row">
             <span>User ID</span>

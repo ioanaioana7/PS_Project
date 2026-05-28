@@ -4,9 +4,9 @@ import CommentVoteControl from '../components/CommentVoteControl';
 
 /**
  * Single Comment Component
- * Added: Image editing functionality.
+ * Added: Image editing functionality and Admin controls.
  */
-function CommentItem({ comment, currentUser, onDelete, onUpdate }) {
+function CommentItem({ comment, currentUser, onDelete, onUpdate, isAdmin }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content || '');
   const [selectedFile, setSelectedFile] = useState(null);
@@ -18,7 +18,7 @@ function CommentItem({ comment, currentUser, onDelete, onUpdate }) {
       if (selectedFile) {
         imageUrl = await uploadImage(selectedFile);
       }
-      
+
       await onUpdate(comment.id, { ...comment, content: editContent, picturePath: imageUrl });
       setIsEditing(false);
       setSelectedFile(null);
@@ -48,11 +48,11 @@ function CommentItem({ comment, currentUser, onDelete, onUpdate }) {
           <strong>User #{comment.userID}</strong>
           <span style={{ fontSize: '0.75rem', opacity: '0.7', marginLeft: '10px' }}>{comment.createTime}</span>
         </div>
-        
+
         {isEditing ? (
           <div className="edit-comment-area" style={{ marginTop: '10px' }}>
-            <textarea 
-              value={editContent} 
+            <textarea
+              value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               style={{ width: '100%', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', padding: '10px' }}
             />
@@ -77,14 +77,14 @@ function CommentItem({ comment, currentUser, onDelete, onUpdate }) {
           </div>
         )}
 
-        {currentUser && comment.userID == currentUser.id && !isEditing && (
+        {currentUser && (isAdmin || comment.userID == currentUser.id) && !isEditing && (
           <div className="comment-actions" style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
             <button onClick={() => setIsEditing(true)} style={{ background: 'none', border: 'none', color: '#e9e9ff', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}>Edit</button>
             <button onClick={() => onDelete(comment.id)} style={{ background: 'none', border: 'none', color: '#fca5a5', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}>Delete</button>
           </div>
         )}
       </div>
-      
+
       <CommentVoteControl commentId={comment.id} />
     </div>
   );

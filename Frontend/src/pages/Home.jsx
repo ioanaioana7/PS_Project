@@ -6,20 +6,21 @@ import VoteControl from '../components/VoteControl';
 
 /**
  * Home Component
- * Updated: Added filtering by title, tag, and own-posts.
+ * Updated: Admins can manage all posts.
  */
 function Home() {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // Filter states
   const [searchTitle, setSearchTitle] = useState('');
   const [searchTag, setSearchTag] = useState('');
   const [onlyMyPosts, setOnlyMyPosts] = useState(false);
-  
+
   const user = JSON.parse(localStorage.getItem('user'));
+  const isAdmin = user && user.role === true;
 
   useEffect(() => {
     loadPosts();
@@ -77,7 +78,7 @@ function Home() {
   return (
     <div className="home-container">
       <nav className="navbar">
-        <div className="nav-logo">My Blog</div>
+        <div className="nav-logo">{isAdmin ? 'Admin Dashboard' : 'My Blog'}</div>
         <div className="nav-links">
           <Link to="/create-post" className="nav-btn create-btn" style={{ background: '#4ade80', color: 'white' }}>+ Create Post</Link>
           <Link to="/user" className="nav-btn">My Profile</Link>
@@ -96,11 +97,11 @@ function Home() {
       </section>
 
       <section className="posts-section">
-        <h1>Latest Posts</h1>
+        <h1>{isAdmin ? 'Management: All Posts' : 'Latest Posts'}</h1>
 
         {loading && <div className="status-message">Loading posts...</div>}
         {error && <div className="status-message error-message">{error}</div>}
-        
+
         {!loading && !error && posts.length === 0 && (
           <div className="status-message">No posts found.</div>
         )}
@@ -125,15 +126,15 @@ function Home() {
                     {post.status || 'Just Posted'}
                   </span>
                 </div>
-                
+
                 <p>{post.content ? (post.content.substring(0, 100) + '...') : 'No content provided.'}</p>
-                
+
                 <div className="post-tags" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', margin: '10px 0' }}>
                   {post.tags && post.tags.map(tag => (
-                    <span key={tag.id} style={{ 
-                      fontSize: '0.7rem', 
-                      background: 'rgba(255,255,255,0.15)', 
-                      padding: '2px 8px', 
+                    <span key={tag.id} style={{
+                      fontSize: '0.7rem',
+                      background: 'rgba(255,255,255,0.15)',
+                      padding: '2px 8px',
                       borderRadius: '10px',
                       border: '1px solid rgba(255,255,255,0.1)'
                     }}>#{tag.description}</span>
@@ -142,44 +143,44 @@ function Home() {
 
                 {post.picturePath && (
                   <div className="post-thumbnail" style={{ margin: '10px 0', borderRadius: '8px', overflow: 'hidden', height: '150px' }}>
-                    <img 
-                      src={getImageUrl(post.picturePath)} 
-                      alt="Post Preview" 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    <img
+                      src={getImageUrl(post.picturePath)}
+                      alt="Post Preview"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={(e) => { e.target.style.display = 'none'; }}
                     />
                   </div>
                 )}
 
-                {user && post.userID === user.id && (
+                {user && (isAdmin || post.userID === user.id) && (
                   <div className="post-actions" style={{ marginTop: '15px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    <Link to={`/edit-post/${post.id}`} className="edit-btn" style={{ 
-                      padding: '6px 12px', 
-                      background: 'rgba(255,255,255,0.2)', 
-                      color: 'white', 
-                      borderRadius: '6px', 
+                    <Link to={`/edit-post/${post.id}`} className="edit-btn" style={{
+                      padding: '6px 12px',
+                      background: 'rgba(255,255,255,0.2)',
+                      color: 'white',
+                      borderRadius: '6px',
                       textDecoration: 'none',
                       fontSize: '0.85rem'
                     }}>Edit</Link>
-                    
+
                     {post.status !== 'Outdated' && (
-                      <button onClick={() => handleClose(post.id)} className="close-btn" style={{ 
-                        padding: '6px 12px', 
-                        background: 'rgba(255, 193, 7, 0.3)', 
-                        color: '#ffc107', 
+                      <button onClick={() => handleClose(post.id)} className="close-btn" style={{
+                        padding: '6px 12px',
+                        background: 'rgba(255, 193, 7, 0.3)',
+                        color: '#ffc107',
                         border: '1px solid #ffc107',
-                        borderRadius: '6px', 
+                        borderRadius: '6px',
                         cursor: 'pointer',
                         fontSize: '0.85rem'
                       }}>Mark Outdated</button>
                     )}
 
-                    <button onClick={() => handleDelete(post.id)} className="delete-btn" style={{ 
-                      padding: '6px 12px', 
-                      background: 'rgba(239, 68, 68, 0.3)', 
-                      color: '#fca5a5', 
+                    <button onClick={() => handleDelete(post.id)} className="delete-btn" style={{
+                      padding: '6px 12px',
+                      background: 'rgba(239, 68, 68, 0.3)',
+                      color: '#fca5a5',
                       border: '1px solid #ef4444',
-                      borderRadius: '6px', 
+                      borderRadius: '6px',
                       cursor: 'pointer',
                       fontSize: '0.85rem'
                     }}>Delete</button>

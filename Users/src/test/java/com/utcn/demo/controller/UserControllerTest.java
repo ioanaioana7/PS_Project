@@ -66,14 +66,21 @@ class UserControllerTest {
     @Test
     void updateUser_ExistingUser_ReturnsUpdated() {
         User existing = new User(7L, "Eve", "old@example.com", false, "pass7");
+        existing.setPhone("123456789");
         User update = new User(null, "Eve", "new@example.com", false, "pass7");
+        update.setPhone("987654321");
+        
         when(userService.findById(7)).thenReturn(existing);
-        when(userService.save(any(User.class))).thenReturn(new User(7L, "Eve", "new@example.com", false, "pass7"));
+        
+        User savedResponse = new User(7L, "Eve", "new@example.com", false, "pass7");
+        savedResponse.setPhone("987654321");
+        when(userService.save(any(User.class))).thenReturn(savedResponse);
 
         User result = userController.updateUser(7, update);
 
         assertNotNull(result);
         assertEquals("new@example.com", result.getEmail());
+        assertEquals("987654321", result.getPhone());
         verify(userService, times(1)).findById(7);
         verify(userService, times(1)).save(existing);
     }

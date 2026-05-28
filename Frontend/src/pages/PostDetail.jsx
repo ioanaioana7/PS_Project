@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { 
-  fetchPostById, 
-  fetchCommentsByPostId, 
-  createComment, 
-  deletePost, 
-  getImageUrl, 
-  deleteComment, 
+import {
+  fetchPostById,
+  fetchCommentsByPostId,
+  createComment,
+  deletePost,
+  getImageUrl,
+  deleteComment,
   updateComment,
   closePost,
   uploadImage
@@ -21,7 +21,7 @@ import './Home.css';
 function PostDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,12 +32,13 @@ function PostDetail() {
   const [showLightbox, setShowLightbox] = useState(false);
 
   const user = JSON.parse(localStorage.getItem('user'));
+  const isAdmin = user && user.role === true;
 
   const loadData = async () => {
     try {
       const postData = await fetchPostById(id);
       const commentsData = await fetchCommentsByPostId(id);
-      
+
       setPost(postData);
       const commentList = commentsData.value ? commentsData.value : (Array.isArray(commentsData) ? commentsData : []);
       setComments(commentList);
@@ -56,7 +57,7 @@ function PostDetail() {
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!newComment.trim() && !selectedFile) return;
-    
+
     if (!user) {
       setError('You must be logged in to comment');
       return;
@@ -76,11 +77,11 @@ function PostDetail() {
         createTime: new Date().toISOString().replace('T', ' ').substring(0, 19),
         post: { id: parseInt(id) }
       };
-      
+
       await createComment(commentData);
       setNewComment('');
       setSelectedFile(null);
-      loadData(); 
+      loadData();
     } catch (err) {
       console.error('Comment error:', err);
       setError('Failed to post comment');
@@ -137,11 +138,11 @@ function PostDetail() {
     <div className="home-container">
       <div className="post-detail-card" style={{ padding: '40px', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', color: 'white' }}>
         <Link to="/home" className="back-link" style={{ display: 'inline-block', marginBottom: '20px' }}>← Back to Feed</Link>
-        
-        {user && post.userID === user.id && (
+
+        {user && (isAdmin || post.userID === user.id) && (
           <div className="post-detail-actions" style={{ float: 'right', display: 'flex', gap: '10px' }}>
             <Link to={`/edit-post/${post.id}`} className="edit-btn" style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.2)', color: 'white', borderRadius: '8px', textDecoration: 'none', fontWeight: '600' }}>Edit Post</Link>
-            
+
             {!isOutdated && (
               <button onClick={handleClosePost} className="close-btn" style={{ padding: '8px 16px', background: 'rgba(255, 193, 7, 0.3)', color: '#ffc107', border: '1px solid #ffc107', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Mark Outdated</button>
             )}
@@ -170,11 +171,11 @@ function PostDetail() {
             </div>
           )}
         </div>
-        
+
         {/* Lightbox Modal */}
         {showLightbox && (
-          <div 
-            className="lightbox-overlay" 
+          <div
+            className="lightbox-overlay"
             style={{
               position: 'fixed',
               top: 0,
@@ -190,14 +191,14 @@ function PostDetail() {
             }}
             onClick={() => setShowLightbox(false)}
           >
-            <img 
-              src={imageSrc} 
-              alt="Enlarged" 
-              style={{ maxWidth: '90%', maxHeight: '90%', borderRadius: '8px', boxShadow: '0 0 20px rgba(0,0,0,0.5)' }} 
+            <img
+              src={imageSrc}
+              alt="Enlarged"
+              style={{ maxWidth: '90%', maxHeight: '90%', borderRadius: '8px', boxShadow: '0 0 20px rgba(0,0,0,0.5)' }}
             />
           </div>
         )}
-        
+
         <div className="tags" style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
           {post.tags && post.tags.map(tag => (
             <span key={tag.id} className="tag" style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem' }}>#{tag.description}</span>
@@ -208,15 +209,16 @@ function PostDetail() {
 
         <div className="comments-section">
           <h3>Comments ({comments.length})</h3>
-          
+
           <div className="comment-list" style={{ marginTop: '20px' }}>
             {comments.map(comment => (
-              <CommentItem 
-                key={comment.id} 
-                comment={comment} 
+              <CommentItem
+                key={comment.id}
+                comment={comment}
                 currentUser={user}
                 onDelete={handleDeleteComment}
                 onUpdate={handleUpdateComment}
+                isAdmin={isAdmin}
               />
             ))}
           </div>

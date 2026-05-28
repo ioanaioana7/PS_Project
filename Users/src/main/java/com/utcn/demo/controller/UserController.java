@@ -33,7 +33,7 @@ public class UserController {
         String password = credentials.get("password");
         User user = userService.login(email, password);
         if (user != null) {
-            if (!userService.isBannned(user)){
+            if (!userService.isBanned(user)){
                 return ResponseEntity.ok(user);
             }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User is currently banned");
@@ -75,6 +75,7 @@ public class UserController {
         if (existingUser != null) {
             existingUser.setName(user.getName());
             existingUser.setEmail(user.getEmail());
+            existingUser.setPhone(user.getPhone());
             return userService.save(existingUser);
         }
         return null;

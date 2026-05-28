@@ -22,14 +22,14 @@ public class User {
     private Long id;
     @Column
     private String name;
-    @Column
+    @Column(unique = true)
     private String email;
     @Column
     private String phone;
     @Column(nullable = false)
     private boolean role;
-    @Column
-    private boolean bannned;
+    @Column(nullable = false)
+    private boolean banned = false;
     @Column
     private String password;
     @Column

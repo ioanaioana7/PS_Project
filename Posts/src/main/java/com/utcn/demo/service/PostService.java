@@ -1,19 +1,5 @@
 package com.utcn.demo.service;
 
-import com.utcn.demo.entity.Post;
-import com.utcn.demo.entity.Tag;
-import com.utcn.demo.repository.PostRepository;
-import com.utcn.demo.repository.TagRepository;
-
-import jakarta.persistence.criteria.Join;
-import jakarta.transaction.Transactional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,12 +9,29 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.utcn.demo.entity.Post;
+import com.utcn.demo.entity.Tag;
+import com.utcn.demo.repository.CommentRepository;
+import com.utcn.demo.repository.PostRepository;
+import com.utcn.demo.repository.TagRepository;
+import com.utcn.demo.repository.VoteRepository;
+
+import jakarta.persistence.criteria.Join;
+import jakarta.transaction.Transactional;
+
 @Transactional
 @Service
 public class PostService {
 
     @Autowired private PostRepository postRepository;
+    @Autowired private CommentRepository commentRepository;
     @Autowired private TagRepository tagRepository;
+    @Autowired private VoteRepository voteRepository;
 
     private final String uploadDir = "uploads"; 
 
@@ -158,7 +161,13 @@ public class PostService {
         }
         return null;
     }
-    public void delete(Post post) {
-        postRepository.delete(post);
+    public void delete(Long id) {
+        Post post = postRepository.findById(id).orElse(null);
+        if (post != null) {
+            // Delete all comments associated with this post first
+            commentRepository.deleteAll(commentRepository.findByPostId(Math.toIntExact(id)));
+            // Then delete the post
+            postRepository.deleteById(id);
+        }
     }
 }

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +21,9 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserService userService;
@@ -65,8 +69,9 @@ class UserServiceTest {
     @Test
     void save_CallsRepositoryAndReturnsSaved() {
         User user = new User(null, "David", "david@example.com", true, "pass4");
-        User saved = new User(100L, "David", "david@example.com", true, "pass4");
+        User saved = new User(100L, "David", "encoded_pass4", true, "encoded_pass4");
 
+        when(passwordEncoder.encode("pass4")).thenReturn("encoded_pass4");
         when(userRepository.save(user)).thenReturn(saved);
 
         User result = userService.save(user);
@@ -74,6 +79,7 @@ class UserServiceTest {
         assertNotNull(result);
         assertEquals(100L, result.getId());
         assertEquals("David", result.getName());
+        verify(passwordEncoder, times(1)).encode("pass4");
         verify(userRepository, times(1)).save(user);
     }
 
