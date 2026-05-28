@@ -36,7 +36,10 @@ function EditPost() {
     fetchPostById(id)
       .then(data => {
         if (!isMounted) return;
-        if (user && data.userID != user.id) {
+        
+        // Allow if user is owner OR user is admin
+        const isAdmin = user && user.role === true;
+        if (user && data.userID != user.id && !isAdmin) {
           navigate('/home');
           return;
         }
@@ -58,7 +61,7 @@ function EditPost() {
         setLoading(false);
       });
     return () => { isMounted = false; };
-  }, [id, navigate, user?.id]);
+  }, [id, navigate, user?.id, user?.role]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

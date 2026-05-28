@@ -6,7 +6,7 @@ import VoteControl from '../components/VoteControl';
 
 /**
  * Home Component
- * Updated: Admins can manage all posts.
+ * Updated: Admins can manage all posts and access user management.
  */
 function Home() {
   const navigate = useNavigate();
@@ -80,6 +80,7 @@ function Home() {
       <nav className="navbar">
         <div className="nav-logo">{isAdmin ? 'Admin Dashboard' : 'My Blog'}</div>
         <div className="nav-links">
+          {isAdmin && <Link to="/manage-users" className="nav-btn" style={{ background: '#eab308', color: 'white' }}>Manage Users</Link>}
           <Link to="/create-post" className="nav-btn create-btn" style={{ background: '#4ade80', color: 'white' }}>+ Create Post</Link>
           <Link to="/user" className="nav-btn">My Profile</Link>
           <button onClick={handleLogout} className="nav-btn logout-btn" style={{ background: '#f87171', color: 'white', border: 'none', cursor: 'pointer' }}>Logout</button>

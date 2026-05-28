@@ -28,7 +28,13 @@ async function apiRequest(url, method = 'GET', data = null) {
       throw new Error(body || response.statusText);
     }
     const text = await response.text();
-    return text ? JSON.parse(text) : {};
+    
+    // Try to parse as JSON, fallback to text if it fails
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        return text;
+    }
   } catch (error) {
     console.error(`API Error (${method} ${url}):`, error);
     throw error;
@@ -58,6 +64,10 @@ export function loginUser(credentials) {
 
 export function updateUser(id, user) {
   return apiPut(`${USERS_API}/update/${id}`, user);
+}
+
+export function banUser(userId, isBanned) {
+  return apiPost(`${USERS_API}/banstatus/${userId}?banstatus=${isBanned}`, {});
 }
 
 export function fetchPosts() {
