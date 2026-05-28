@@ -7,5 +7,6 @@
             "path": "D:\\Aplicatii instalate\\Java\\jdk-21",
             "default": true
         }
-    ]
+    ],
+    "java.debug.settings.onBuildFailureProceed": true
 }

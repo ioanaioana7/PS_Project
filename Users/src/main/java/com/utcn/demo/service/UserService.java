@@ -45,15 +45,15 @@ public class UserService {
         return null;
     }
 
-    public boolean isBannned(User user) {
-        return user.isBannned();
+    public boolean isBanned(User user) {
+        return user.isBanned();
     }
 
     public boolean changeUserBanStatus(long userID, boolean banStatus) {
         Optional<User> user = userRepository.findById(userID);
         if (user.isPresent()) {
             User u = user.get();
-            if (u.isBannned() != banStatus) {
+            if (u.isBanned() != banStatus) {
                 if (banStatus == true) {
                     try {
                         Map<String, String> requestBody = new HashMap<>();
@@ -79,7 +79,7 @@ public class UserService {
 
                         System.out.println(e.getMessage());
                     }
-                    u.setBannned(true);
+                    u.setBanned(true);
                 } else {
                     try {
                         Map<String, String> requestBody = new HashMap<>();
@@ -104,7 +104,7 @@ public class UserService {
                     } catch (Exception e) {
                         System.out.println("Email coudnt be send");
                     }
-                    u.setBannned(false);
+                    u.setBanned(false);
                 }
                 userRepository.save(u);
             }
@@ -118,8 +118,8 @@ public class UserService {
     }
 
     public User save(User user) {
-        // Encrypt password
-        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+        // Only encrypt password if it's not already encrypted (raw password won't start with $2a$)
+        if (user.getPassword() != null && !user.getPassword().isEmpty() && !user.getPassword().startsWith("$2a$")) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
         return userRepository.save(user);

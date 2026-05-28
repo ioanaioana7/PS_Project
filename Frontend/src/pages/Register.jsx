@@ -9,14 +9,15 @@ import { createUser } from '../api';
  */
 function Register() {
   const navigate = useNavigate();
-  
+
   // State for registration details
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     password: ''
   });
-  
+
   // Error message state
   const [error, setError] = useState('');
 
@@ -54,7 +55,7 @@ function Register() {
 
       // Automatically log the user in by storing their data
       localStorage.setItem('user', JSON.stringify(createdUser));
-      
+
       // Navigate to the user's profile
       navigate('/user');
     } catch (err) {
@@ -88,6 +89,17 @@ function Register() {
               value={formData.email}
               onChange={handleChange}
               placeholder="Enter your email"
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="phone">Phone Number</label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="Enter your phone number"
             />
           </div>
           <div className="form-group">

@@ -5,13 +5,13 @@ import './Auth.css';
 
 /**
  * EditUser Component
- * Allows users to update their own profile (Name and Email).
+ * Allows users to update their own profile (Name, Email, and Phone).
  * Added logging and extra safety to debug "blank page" issue.
  */
 function EditUser() {
   console.log('EditUser component rendering');
   const navigate = useNavigate();
-  
+
   // Safely get user from localStorage
   const getStoredUser = () => {
     try {
@@ -24,10 +24,11 @@ function EditUser() {
   };
 
   const storedUser = getStoredUser();
-  
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -35,7 +36,7 @@ function EditUser() {
 
   useEffect(() => {
     console.log('EditUser useEffect running', { storedUser });
-    
+
     if (!storedUser || !storedUser.id) {
       console.warn('No user session found, redirecting to login');
       navigate('/login');
@@ -48,6 +49,7 @@ function EditUser() {
         setFormData({
           name: data.name || '',
           email: data.email || '',
+          phone: data.phone || '',
         });
         setLoading(false);
       })
@@ -72,7 +74,7 @@ function EditUser() {
       console.log('Submitting user update:', formData);
       const updatedUser = await updateUser(storedUser.id, formData);
       console.log('Update successful:', updatedUser);
-      
+
       // Update local storage so the UI reflects changes immediately
       localStorage.setItem('user', JSON.stringify(updatedUser));
       navigate('/user');
@@ -101,9 +103,9 @@ function EditUser() {
     <div className="auth-container">
       <div className="auth-card">
         <h1>Update Profile</h1>
-        
+
         {error && <div className="error-message">{error}</div>}
-        
+
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="name">Name</label>
@@ -118,7 +120,7 @@ function EditUser() {
               required
             />
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
@@ -132,21 +134,34 @@ function EditUser() {
               required
             />
           </div>
-          
+
+          <div className="form-group">
+            <label htmlFor="phone">Phone Number</label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onInput={handleChange}
+              onChange={handleChange}
+              placeholder="Enter your phone number"
+            />
+          </div>
+
           <button type="submit" className="auth-button" disabled={updating}>
             {updating ? 'Saving Changes...' : 'Save Changes'}
           </button>
         </form>
-        
-        <button 
-          onClick={() => navigate('/user')} 
-          className="auth-link" 
-          style={{ 
-            background: 'none', 
-            border: 'none', 
-            cursor: 'pointer', 
-            display: 'block', 
-            width: '100%', 
+
+        <button
+          onClick={() => navigate('/user')}
+          className="auth-link"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'block',
+            width: '100%',
             marginTop: '15px',
             textDecoration: 'underline'
           }}

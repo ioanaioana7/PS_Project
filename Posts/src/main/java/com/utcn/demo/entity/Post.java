@@ -1,6 +1,7 @@
 package com.utcn.demo.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.*;
@@ -10,6 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -44,6 +46,10 @@ public class Post {
             joinColumns = @JoinColumn(name = "post_id"),
             inverseJoinColumns = @JoinColumn(name = "tag_id"))
     private Set<Tag> tags;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> comments;
 
     public void addTag(Tag tag) {
         tags.add(tag);

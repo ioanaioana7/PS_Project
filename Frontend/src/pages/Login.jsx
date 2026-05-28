@@ -28,7 +28,9 @@ function Login() {
     try {
       const user = await loginUser(formData);
       localStorage.setItem('user', JSON.stringify(user));
-      navigate('/user');
+      
+      // Navigate based on role 
+      navigate('/home');
     } catch (err) {
       setError(err.message || 'Invalid email or password');
     }

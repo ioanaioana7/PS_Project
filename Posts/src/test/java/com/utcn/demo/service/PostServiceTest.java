@@ -1,7 +1,9 @@
 package com.utcn.demo.service;
 
 import com.utcn.demo.entity.Post;
+import com.utcn.demo.repository.CommentRepository;
 import com.utcn.demo.repository.PostRepository;
+import com.utcn.demo.repository.VoteRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -15,7 +17,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,6 +24,12 @@ class PostServiceTest {
 
     @Mock
     private PostRepository postRepository;
+    
+    @Mock
+    private CommentRepository commentRepository;
+
+    @Mock
+    private VoteRepository voteRepository;
 
     @InjectMocks
     private PostService postService;
@@ -30,8 +37,8 @@ class PostServiceTest {
     @Test
     void findAll_ReturnsPostList() {
         List<Post> posts = new ArrayList<>();
-        posts.add(new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published", new HashSet<>()));
-        posts.add(new Post(2L, 101L, "Java Best Practices", "Important Java best practices", LocalDateTime.now(), null, "published", new HashSet<>()));
+        posts.add(new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published", new HashSet<>(), null));
+        posts.add(new Post(2L, 101L, "Java Best Practices", "Important Java best practices", LocalDateTime.now(), null, "published", new HashSet<>(), null));
 
         when(postRepository.findAllByOrderByPostDateDesc()).thenReturn(posts);
 
@@ -56,7 +63,7 @@ class PostServiceTest {
 
     @Test
     void findById_ExistingId_ReturnsPost() {
-        Post post = new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published", new HashSet<>());
+        Post post = new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published", new HashSet<>(), null);
         when(postRepository.findById(1L)).thenReturn(Optional.of(post));
 
         Post result = postService.findById(1);
@@ -79,7 +86,7 @@ class PostServiceTest {
 
     @Test
     void save_CallsRepositoryAndReturnsSaved() {
-        Post post = new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published", new HashSet<>());
+        Post post = new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published", new HashSet<>(), null);
         when(postRepository.save(post)).thenReturn(post);
 
         Post result = postService.save(post);
@@ -92,8 +99,8 @@ class PostServiceTest {
 
     @Test
     void save_NewPost_ReturnsSavedWithId() {
-        Post newPost = new Post(null, 102L, "New Post", "New content", LocalDateTime.now(), null, "draft", new HashSet<>());
-        Post saved = new Post(50L, 102L, "New Post", "New content", LocalDateTime.now(), null, "draft", new HashSet<>());
+        Post newPost = new Post(null, 102L, "New Post", "New content", LocalDateTime.now(), null, "draft", new HashSet<>(), null);
+        Post saved = new Post(50L, 102L, "New Post", "New content", LocalDateTime.now(), null, "draft", new HashSet<>(), null);
 
         when(postRepository.save(newPost)).thenReturn(saved);
 
@@ -107,11 +114,15 @@ class PostServiceTest {
 
     @Test
     void delete_CallsRepositoryDelete() {
-        Post post = new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published", new HashSet<>());
-        doNothing().when(postRepository).delete(post);
+        Long postId = 1L;
+        Post post = new Post(1L, 100L, "Spring Boot Tips", "Here are some useful Spring Boot tips", LocalDateTime.now(), null, "published", new HashSet<>(), null);
+        
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        
+        postService.delete(postId);
 
-        postService.delete(post);
-
-        verify(postRepository, times(1)).delete(post);
+        verify(postRepository, times(1)).findById(postId);
+        verify(commentRepository, times(1)).deleteAll(anyList());
+        verify(postRepository, times(1)).deleteById(postId);
     }
 }

@@ -7,6 +7,7 @@ import EditUser from './pages/EditUser';
 import PostDetail from './pages/PostDetail';
 import CreatePost from './pages/CreatePost';
 import EditPost from './pages/EditPost';
+import ManageUsers from './pages/ManageUsers';
 import ProtectedRoute from './ProtectedRoute';
 import './App.css';
 
@@ -22,6 +23,11 @@ function App() {
         } />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/manage-users" element={
+          <ProtectedRoute>
+            <ManageUsers />
+          </ProtectedRoute>
+        } />
         <Route path="/create-post" element={
           <ProtectedRoute>
             <CreatePost />

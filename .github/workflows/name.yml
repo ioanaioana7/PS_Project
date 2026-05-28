@@ -2,7 +2,7 @@ name: Unit Tests
 
 on:
   push:
-    branches: [ main, Ioana, Doriana2, George ]
+    branches: [ main, Ioana2, Doriana2, George ]
   pull_request:
     branches: [ main, Ioana, Doriana2, George ]
 
